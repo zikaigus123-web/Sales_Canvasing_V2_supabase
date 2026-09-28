@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Canvasing Pro - Enterprise V2</title>
+    
+    <link rel="icon" type="image/jpeg" href="logo-utschool.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Supabase CDN (Version 2 Backend) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root { --primary-bg: #F1F5F9; --sidebar-bg: #1A1A1A; --sidebar-hover: #2D3748; --brand-color: #FFC000; --brand-hover: #E6AC00; --text-main: #2D3748; --text-muted: #718096; --card-bg: #ffffff; --border-color: #E2E8F0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--primary-bg); color: var(--text-main); overflow-x: hidden; }
+        .btn-primary { background-color: var(--brand-color); border-color: var(--brand-color); color: #1A1A1A; font-weight: 700; }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active { background-color: var(--brand-hover) !important; border-color: var(--brand-hover) !important; color: #1A1A1A !important; }
+        .btn-outline-primary { color: var(--sidebar-bg); border-color: var(--brand-color); font-weight: 600; }
+        .btn-outline-primary:hover { background-color: var(--brand-color); color: #1A1A1A; border-color: var(--brand-color); }
+        .bg-primary { background-color: var(--brand-color) !important; color: #1A1A1A !important; }
+        .text-primary { color: var(--sidebar-bg) !important; }
+        .login-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1A1A1A 0%, #2D3748 100%); position: relative; overflow: hidden; }
+        .login-wrapper::before { content: ''; position: absolute; width: 400px; height: 400px; background: var(--brand-color); border-radius: 50%; top: -100px; left: -100px; opacity: 0.1; filter: blur(50px); }
+        .login-card { background: rgba(255, 255, 255, 0.98); padding: 3rem; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); width: 100%; max-width: 420px; z-index: 10; border-top: 8px solid var(--brand-color); }
+        #appContainer { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; transition: all 0.3s ease; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; z-index: 1000; box-shadow: 4px 0 10px rgba(0,0,0,0.1); overflow-y: auto; overflow-x: hidden; }
+        .sidebar::-webkit-scrollbar { width: 5px; } 
+        .sidebar::-webkit-scrollbar-track { background: var(--sidebar-bg); } 
+        .sidebar::-webkit-scrollbar-thumb { background: #4A5568; border-radius: 4px; } 
+        .sidebar::-webkit-scrollbar-thumb:hover { background: var(--brand-color); }
+        .sidebar.collapsed { width: 80px; }
+        .sidebar-brand { padding: 1.5rem; font-size: 1.5rem; font-weight: 800; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .sidebar-brand i { color: var(--brand-color); }
+        .nav-link-custom { color: #A0AEC0; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease; text-decoration: none; border-left: 4px solid transparent; white-space: nowrap; font-weight: 500; }
+        .nav-link-custom:hover, .nav-link-custom.active { background-color: rgba(255, 192, 0, 0.05); color: var(--brand-color); border-left-color: var(--brand-color); }
+        .nav-link-custom i { width: 20px; text-align: center; font-size: 1.1rem; }
+        .sidebar.collapsed .nav-text { display: none; }
+        .main-content { flex: 1; display: flex; flex-direction: column; width: calc(100% - 260px); transition: all 0.3s ease; }
+        .topbar { background: var(--card-bg); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 999; border-bottom: 1px solid var(--border-color); }
+        .content-body { padding: 2rem; flex: 1; }
+        .card-custom { background: var(--card-bg); border-radius: 1rem; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); padding: 1.5rem; margin-bottom: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .card-custom:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08); }
+        .kpi-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: clamp(1rem, 1.5vw, 1.8rem); font-weight: 800; color: var(--sidebar-bg); margin-top: 0.25rem; line-height: 1.2; white-space: normal; word-break: break-word; }
+        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table-custom th { background-color: #F8FAFC; color: var(--text-muted); font-weight: 700; padding: 1rem; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
+        .table-custom td { padding: 1rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 0.875rem; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .edit-allowed { display: none; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; } 
+        ::-webkit-scrollbar-track { background: var(--primary-bg); } 
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; } 
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand-color); }
+        .dash-banner { background-color: var(--sidebar-bg); border-left: 6px solid var(--brand-color); border-radius: 1rem; padding: 1.5rem 2rem; color: white; position: relative; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .dash-banner i.bg-icon { position: absolute; right: -20px; bottom: -30px; font-size: 10rem; color: rgba(255,255,255,0.03); transform: rotate(-15deg); }
+        .modal-backdrop { backdrop-filter: blur(6px) !important; background-color: rgba(15, 23, 42, 0.5) !important; }
+        .modal-backdrop.show { opacity: 1 !important; }
+        .det-modal-content { border-radius: 1.25rem; border: none; padding: 25px; background: #ffffff; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .det-card { border: 1px solid #E2E8F0; border-radius: 12px; padding: 15px; background: #F8FAFC; height: 100%; }
+        .det-label { display: block; font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+        .det-value { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+        :fullscreen .sidebar { display: none !important; }
+        :fullscreen .topbar { display: none !important; }
+        :fullscreen .main-content { width: 100% !important; margin: 0 !important; flex: 1; }
+        :fullscreen #view-dashboard { background-color: var(--primary-bg); padding: 15px 20px; overflow-y: auto !important; display: flex; flex-direction: column; height: 100vh !important; width: 100vw !important; box-sizing: border-box; gap: 15px; }
+        :fullscreen #view-dashboard .dash-banner { display: none !important; }
+        :fullscreen #view-dashboard .main-layout-row { flex: 1; margin: 0 !important; min-height: 0; display: flex; flex-wrap: nowrap !important; gap: 15px; }
+        :fullscreen #view-dashboard .col-left { flex: 1.4 !important; width: auto !important; display: flex; flex-direction: column; gap: 15px; padding: 0 !important; }
+        :fullscreen #view-dashboard .col-right { flex: 1 !important; width: auto !important; display: flex; flex-direction: column; gap: 15px; padding: 0 !important; }
+        :fullscreen #view-dashboard .fs-kpi-row { margin: 0 !important; flex: 0 0 auto; }
+        :fullscreen #view-dashboard .fs-chart-row { margin: 0 !important; flex: 1 1 0; display: flex; flex-wrap: nowrap !important; gap: 15px; min-height: 0; }
+        :fullscreen #view-dashboard .fs-chart-row > .col-md-4 { flex: 1; padding: 0; display: flex; flex-direction: column; width: 33.33% !important; }
+        :fullscreen #view-dashboard .card-custom { height: 100%; margin-bottom: 0 !important; padding: 10px 15px !important; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex: 1 1 0; min-height: 0; }
+        :fullscreen #view-dashboard .fs-map-card { flex: 1.2 1 0 !important; }
+        :fullscreen #view-dashboard h6 { margin-bottom: 5px !important; font-size: 0.85rem; flex-shrink: 0; }
+        :fullscreen #view-dashboard .kpi-value { font-size: clamp(0.9rem, 1.2vw, 1.6rem); margin-top: 2px; white-space: normal; word-break: break-word; }
+        :fullscreen #view-dashboard .chart-container { flex: 1 1 0 !important; min-height: 0 !important; height: 100% !important; position: relative; }
+        :fullscreen #view-dashboard canvas { max-height: 100% !important; max-width: 100% !important; }
+        :fullscreen #view-dashboard #mapLokasi { flex: 1 1 0 !important; min-height: 0 !important; height: 100% !important; border-radius: 6px; }
+        :fullscreen #view-dashboard .table-responsive { flex: 1 1 0 !important; min-height: 0 !important; overflow-y: auto; }
+        :fullscreen #view-dashboard .table-custom th, :fullscreen #view-dashboard .table-custom td { padding: 4px 8px; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="login-wrapper fade-in">
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <div class="bg-primary rounded d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 70px; height: 70px; font-size: 2rem; transform: rotate(3deg);">
+                    <i class="fas fa-chart-line text-dark" style="transform: rotate(-3deg);"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: #1A1A1A; letter-spacing: -0.5px;">Sales Pro</h3>
+                <p class="fw-bold text-dark mb-2" style="font-size: 0.85rem;">Enterprise Project & Revenue System</p>
+                <p class="text-muted small fw-bold tracking-widest mb-0" style="letter-spacing: 2px; font-size: 0.7rem;">SECURE LOGIN (SUPABASE V2)</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-dark">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username" required placeholder="Masukkan username">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-dark">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 ps-0 bg-light" id="password" required placeholder="Masukkan password">
+                        <button class="btn btn-light border" type="button" onclick="togglePassword()"><i class="fas fa-eye text-muted" id="eyeIcon"></i></button>
+                    </div>
+                </div>
+                <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2.5 fs-6 shadow-sm" disabled>
+                    <i class="fas fa-spinner fa-spin me-2"></i> MENGHUBUNGKAN SUPABASE...
+                </button>
+                <div class="text-center mt-4 pt-3 border-top border-light">
+                    <p class="text-muted mb-0 mt-1" style="font-size: 0.7rem; font-weight: 700;"><i class="fas fa-shield-alt me-1"></i> Backend by Supabase Postgres</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="appContainer" class="d-none">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <img src="logo-utschool.jpg" alt="UT School" style="max-height: 40px; border-radius: 4px; object-fit: contain; background: white; padding: 2px;" onerror="this.src='https://via.placeholder.com/40x40?text=UT';">
+                <span class="nav-text ms-2" style="font-size: 1.3rem;">Sales Pro</span>
+            </div>
+            <div class="d-flex flex-column mt-4 gap-1">
+                <a href="#" class="nav-link-custom active" onclick="switchView('dashboard', this)"><i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span></a>
+                <a href="#" class="nav-link-custom" onclick="switchView('sales', this)"><i class="fas fa-briefcase"></i> <span class="nav-text">Database Projek</span></a>
+                <a href="#" class="nav-link-custom" onclick="switchView('reports', this)"><i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Laporan (Report)</span></a>
+                <div class="nav-text px-4 mt-4 mb-2 text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">SYSTEM</div>
+                <a href="#" class="nav-link-custom py-2 edit-allowed" onclick="switchView('logs', this)"><i class="fas fa-history"></i> <span class="nav-text">Log Aktivitas</span></a>
+                <div class="mt-auto mb-3 pt-3">
+                    <a href="#" class="nav-link-custom edit-allowed py-2" onclick="switchView('users', this)"><i class="fas fa-user-shield"></i> <span class="nav-text">User Access</span></a>
+                    <a href="#" class="nav-link-custom py-2 text-danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span class="nav-text">Keluar</span></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="topbar">
+                <button class="btn btn-light border shadow-sm" onclick="toggleSidebar()"><i class="fas fa-bars text-dark"></i></button>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-md-block">
+                        <div class="fw-bold text-dark" id="displayUserName" style="line-height: 1.2;">Admin</div>
+                        <div class="small text-muted fw-bold" id="displayUserRole" style="font-size: 0.7rem; text-transform: uppercase;">Administrator</div>
+                    </div>
+                    <div class="bg-primary text-dark rounded d-flex align-items-center justify-content-center shadow-sm fw-bold" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                        <span id="displayUserInitial">A</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-body">
+                <div id="view-dashboard" class="view-section active fade-in">
+                    <div class="dash-banner mb-4">
+                        <i class="fas fa-chart-pie bg-icon"></i>
+                        <div class="position-relative z-1">
+                            <h3 class="fw-bold mb-2" id="dashGreeting">Halo, ADMIN.</h3>
+                            <p class="mb-0 fs-6 text-light" style="max-width: 800px; line-height: 1.6;" id="dashStory">
+                                Memuat ringkasan data sistem dari Supabase...
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+                        <h3 class="mb-0 fw-bold">Dashboard Sales Canvasing UT School</h3>
+                        <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end">
+                            <label class="form-label mb-0 small fw-bold text-muted d-none d-xl-block">Filter Tampilan:</label>
+                            <select class="form-select form-select-sm fw-bold border-dark shadow-sm" style="width: auto;" id="dashFilterStatus" onchange="renderDashboard()">
+                                <option value="ALL">Semua Status (ALL)</option>
+                                <option value="DEAL">Hanya DEAL</option>
+                                <option value="ON PROGRESS">Hanya ON PROGRESS</option>
+                                <option value="NEW">Hanya NEW</option>
+                                <option value="NO DEAL">Hanya NO DEAL</option>
+                            </select>
+                            <select class="form-select form-select-sm fw-bold border-dark shadow-sm" style="width: auto;" id="dashFilterBulan" onchange="renderDashboard()">
+                                <option value="ALL">Semua Bulan (ALL)</option>
+                                <option value="YTD">YTD (Year to Date)</option>
+                                <option value="JAN">JAN</option>
+                                <option value="FEB">FEB</option>
+                                <option value="MAR">MAR</option>
+                                <option value="APR">APR</option>
+                                <option value="MAY">MAY</option>
+                                <option value="JUN">JUN</option>
+                                <option value="JUL">JUL</option>
+                                <option value="AUG">AUG</option>
+                                <option value="SEP">SEP</option>
+                                <option value="OCT">OCT</option>
+                                <option value="NOV">NOV</option>
+                                <option value="DEC">DEC</option>
+                            </select>
+                            <div class="input-group input-group-sm shadow-sm" style="width: auto;">
+                                <input type="date" id="dashStartDate" class="form-control fw-bold border-dark" title="Mulai Tanggal" onchange="renderDashboard()">
+                                <span class="input-group-text bg-light border-dark">-</span>
+                                <input type="date" id="dashEndDate" class="form-control fw-bold border-dark" title="Sampai Tanggal" onchange="renderDashboard()">
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm fw-bold" onclick="renderDashboard()"><i class="fas fa-sync-alt me-1"></i> Perbarui</button>
+                            <button class="btn btn-dark btn-sm fw-bold" onclick="toggleFullscreen()"><i class="fas fa-expand me-1" id="fsIcon"></i> Fullscreen</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 main-layout-row">
+                        <div class="col-xl-7 col-lg-12 col-left">
+                            <div class="row g-3 fs-kpi-row">
+                                <div class="col-md-3">
+                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-info">
+                                        <div class="kpi-title" id="kpiTitleTotalAmount">TOTAL POTENTIAL AMOUNT PROJECT</div>
+                                        <div class="kpi-value text-info" id="kpiTotalAmount">Rp 0</div>
+                                        <div class="small text-muted mt-2 fw-bold" style="height: 18px;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-warning">
+                                        <div class="kpi-title" id="kpiTitleRev">TOTAL PROJECT AMOUNT (DEAL)</div>
+                                        <div class="kpi-value text-success" id="kpiRevenue">Rp 0</div>
+                                        <div class="small text-muted mt-2 fw-bold" id="kpiDealPercent"><i class="fas fa-bullseye text-primary me-1"></i> 0% dari Potential</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-dark">
+                                        <div class="kpi-title">TOTAL PROJEK</div>
+                                        <div class="kpi-value" id="kpiTotalDeal">0</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-secondary">
+                                        <div class="kpi-title" id="kpiTitlePending">PROJEK ON PROGRESS</div>
+                                        <div class="kpi-value text-danger" id="kpiTotalPending">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3 fs-chart-row mt-3">
+                                <div class="col-md-4">
+                                    <div class="card-custom h-100 mb-0 d-flex flex-column">
+                                        <h6 class="fw-bold mb-3 text-dark text-center">Project Comparison By Status</h6>
+                                        <div class="chart-container" style="position: relative; flex: 1; min-height: 200px; width: 100%;"><canvas id="chartStatus"></canvas></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card-custom h-100 mb-0 d-flex flex-column">
+                                        <h6 class="fw-bold mb-3 text-dark text-center">Komposisi Jenis Layanan</h6>
+                                        <div class="chart-container" style="position: relative; flex: 1; min-height: 200px; width: 100%;"><canvas id="chartJenis"></canvas></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card-custom h-100 mb-0 d-flex flex-column">
+                                        <h6 class="fw-bold mb-3 text-dark text-center">Distribusi Alasan Cancel</h6>
+                                        <div class="chart-container" style="position: relative; flex: 1; min-height: 200px; width: 100%;"><canvas id="chartCancel"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-custom flex-grow-1 mb-0 d-flex flex-column fs-map-card mt-3">
+                                <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-map-marker-alt text-danger me-2"></i>Peta Persebaran Lokasi Projek</h6>
+                                <div id="mapLokasi" style="height: 350px; width: 100%; border-radius: 8px; z-index: 1;"></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-5 col-lg-12 col-right d-flex flex-column gap-3">
+                            <div class="card-custom mb-0 d-flex flex-column">
+                                <h6 class="fw-bold mb-3 text-dark text-center">Actual and Potential Revenue Sales Forces</h6>
+                                <div class="chart-container" style="position: relative; flex: 1; min-height: 200px; width: 100%;"><canvas id="chartTrend"></canvas></div>
+                            </div>
+                            <div class="card-custom mb-0 d-flex flex-column">
+                                <h6 class="fw-bold mb-3 text-dark text-center">Top 5 Client</h6>
+                                <div class="chart-container" style="position: relative; flex: 1; min-height: 200px; width: 100%;"><canvas id="chartClient"></canvas></div>
+                            </div>
+                            <div class="card-custom flex-grow-1 mb-0 d-flex flex-column">
+                                <h6 class="fw-bold mb-3 text-dark">Kontribusi Layanan per Bulan</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered text-center align-middle mb-0" id="tblMatriksDashboard"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-sales" class="view-section fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                        <h3 class="mb-0 fw-bold">Database Projek</h3>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-outline-info fw-bold edit-allowed" onclick="window.open('https://docs.google.com/spreadsheets/d/1kL3DUrkRsi1ItPYqfkFbkBQ6j1cRuNGcclUxbhKNF0g/edit?usp=sharing', '_blank')"><i class="fas fa-external-link-alt me-2"></i>Buka Spreadsheet Lamo</button>
+                            <button class="btn btn-light border fw-bold edit-allowed" onclick="downloadTemplate()"><i class="fas fa-file-excel me-2 text-success"></i>Template</button>
+                            <button class="btn btn-outline-secondary edit-allowed fw-bold" onclick="document.getElementById('importExcelInput').click()"><i class="fas fa-upload me-2"></i>Wipe & Import Data</button>
+                            <input type="file" id="importExcelInput" class="d-none" accept=".xlsx, .xls" onchange="handleImportExcel(event)">
+                        </div>
+                    </div>
+                    <div class="card-custom">
+                        <div class="d-flex justify-content-between mb-4 align-items-center">
+                            <div class="input-group w-50 shadow-sm rounded">
+                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" id="searchSales" class="form-control border-start-0 ps-0" placeholder="Pencarian No. Projek, Judul, atau Klien..." onkeyup="renderSalesTable()">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom align-middle" id="tblSales">
+                                <thead>
+                                    <tr>
+                                        <th style="cursor: pointer;" onclick="setSortSales('no_projek')">Tgl / No Projek <i class="fas fa-sort text-muted ms-1"></i></th>
+                                        <th style="cursor: pointer;" onclick="setSortSales('judul_projek')">Judul & Jenis Projek <i class="fas fa-sort text-muted ms-1"></i></th>
+                                        <th style="cursor: pointer;" onclick="setSortSales('customer')">Klien (Customer) <i class="fas fa-sort text-muted ms-1"></i></th>
+                                        <th style="cursor: pointer;" onclick="setSortSales('lokasi')">Lokasi <i class="fas fa-sort text-muted ms-1"></i></th>
+                                        <th style="cursor: pointer;" onclick="setSortSales('nilai')">Amount / Nilai <i class="fas fa-sort text-muted ms-1"></i></th>
+                                        <th style="cursor: pointer;" onclick="setSortSales('status_final')">STATUS <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-reports" class="view-section fade-in">
+                    <h3 class="mb-4 fw-bold">Laporan Ringkasan Sales (Report)</h3>
+                    <div class="card-custom mb-4 bg-light border-0">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-dark">Filter Status Akhir</label>
+                                <select class="form-select shadow-sm" id="reportFilterStatus">
+                                    <option value="ALL">Semua Status (ALL)</option>
+                                    <option value="DEAL">Hanya DEAL</option>
+                                    <option value="ON PROGRESS">Hanya ON PROGRESS</option>
+                                    <option value="NEW">Hanya NEW</option>
+                                    <option value="NO DEAL">Hanya NO DEAL</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-dark">Filter Bulan</label>
+                                <select class="form-select shadow-sm" id="reportFilterBulan">
+                                    <option value="ALL">Semua Bulan (ALL)</option>
+                                    <option value="JAN">JAN</option><option value="FEB">FEB</option><option value="MAR">MAR</option><option value="APR">APR</option><option value="MAY">MAY</option><option value="JUN">JUN</option><option value="JUL">JUL</option><option value="AUG">AUG</option><option value="SEP">SEP</option><option value="OCT">OCT</option><option value="NOV">NOV</option><option value="DEC">DEC</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-dark w-100 shadow-sm fw-bold" onclick="generateReport()"><i class="fas fa-bolt me-2 text-primary"></i>Tarik Data</button>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-success bg-white w-100 shadow-sm fw-bold" onclick="exportReportExcel()"><i class="fas fa-file-excel me-2"></i>Excel</button>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-danger bg-white w-100 shadow-sm fw-bold" onclick="exportReportPDF()"><i class="fas fa-file-pdf me-2"></i>PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-custom">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom" id="tblReport">
+                                <thead>
+                                    <tr><th>Tgl Dibuat</th><th>No. Projek</th><th>Judul Projek</th><th>Jenis</th><th>Customer</th><th>Bulan</th><th>Amount</th><th>STATUS</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="8" class="text-center py-5 text-muted"><i class="fas fa-table fs-3 mb-2"></i><br>Klik "Tarik Data" untuk menampilkan Laporan</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-logs" class="view-section fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="mb-0 fw-bold">Log Aktivitas Sistem</h3>
+                    </div>
+                    <div class="card-custom">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom align-middle" id="tblLogs">
+                                <thead><tr><th style="width: 15%;">Waktu (Timestamp)</th><th style="width: 15%;">Username</th><th style="width: 15%;">Kategori Aksi</th><th style="width: 40%;">Rangkuman Aktivitas</th><th style="width: 15%;" class="text-center">Aksi</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-users" class="view-section fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="mb-0 fw-bold">Manajemen Akses (Users)</h3>
+                        <button class="btn btn-primary" onclick="openUserModal()"><i class="fas fa-plus me-2"></i>Akun Baru</button>
+                    </div>
+                    <div class="card-custom">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom" id="tblUsers">
+                                <thead><tr><th>Username / ID Login</th><th>Hak Akses (Role)</th><th>Status Akun</th><th class="text-center">Tindakan</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS SECTION -->
+    <div class="modal fade" id="modalCancelList" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 1rem;">
+                <div class="modal-header bg-dark text-white border-bottom border-4 border-danger">
+                    <h5 class="modal-title fw-bold" id="titleCancelList">Daftar Projek Cancel</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom align-middle mb-0" id="tblCancelList">
+                            <thead><tr><th>Jenis</th><th>Judul Projek</th><th>Customer</th><th class="text-center">Aksi</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light"><button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Tutup</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalCancelDetail" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content det-modal-content">
+                <div class="det-header mb-4">
+                    <div class="d-flex justify-content-between align-items-start w-100">
+                        <div>
+                            <h3 id="detCancelJudul" style="font-size: 1.25rem; font-weight: 800; color: #1e293b; margin-bottom: 4px; line-height: 1.3;">Judul Projek</h3>
+                            <p id="detCancelNo" style="font-size: 0.85rem; color: #64748b; font-weight: 600; margin: 0;">No. Projek : -</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="padding: 5px; margin-left: 15px;"></button>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6"><div class="det-card"><label class="det-label">Customer</label><span id="detCancelCustomer" class="det-value" style="color: #1e40af;">PT ABC</span></div></div>
+                    <div class="col-6"><div class="det-card"><label class="det-label">Jenis Projek</label><span id="detCancelJenis" class="det-value" style="color: #1e40af;">Jenis</span></div></div>
+                    <div class="col-12"><div class="det-card"><label class="det-label">Nilai / Amount</label><span id="detCancelNilai" style="font-size: 1.3rem; font-weight: 800; color: #1e293b;">Rp 0</span></div></div>
+                    <div class="col-12"><div class="det-ket-box" style="border: 1px solid #fecaca; background: #fef2f2; border-radius: 12px; padding: 15px;"><label class="det-ket-label" style="color: #b91c1c; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; display: block;">Keterangan Detail Cancel</label><p id="detCancelKeterangan" class="det-ket-text" style="color: #991b1b; font-size: 0.95rem; margin: 0; white-space: pre-wrap; line-height: 1.5;">Alasan lengkap...</p></div></div>
+                </div>
+                <div class="d-flex justify-content-end mt-4 pt-3"><button type="button" class="btn btn-outline-dark fw-bold px-4" onclick="openCancelListModal(document.getElementById('titleCancelList').innerText.replace('Daftar Projek Cancel: ', ''))">Kembali</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalUser" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white border-bottom border-4 border-warning"><h5 class="modal-title fw-bold">Manajemen Akun</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="formUser">
+                        <div class="mb-3"><label class="form-label fw-bold small text-muted">Username / ID Login</label><input type="text" class="form-control" id="usrName" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold small text-muted">Password Sementara</label><input type="password" class="form-control" id="usrPass" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold small text-muted">Tingkat Akses (Role)</label><select class="form-select border-dark" id="usrRole"><option value="admin">Administrator Full</option><option value="viewer">Viewer Only</option></select></div>
+                    </form>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary" onclick="saveUser()"><i class="fas fa-save me-2"></i>Buat Akun</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        // ==========================================
+        // KONFIGURASI DATABASE SUPABASE (VERSION 2)
+        // ==========================================
+        const SUPABASE_URL = 'https://tqexowapptqszxlfgszz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxZXhvd2FwcHRxc3p4bGZnc3p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NDc2ODMsImV4cCI6MjEwNjEyMzY4M30.-Bfl_ysNmfhCv0vKQnsTLzw_B6Kvdjdwn4EnMSF74lE'; // <-- PASTE KEY HERE
+        
+        const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let localDB = { users: [], sales_data: [], logs: [] };
+        let currentUser = null;
+        let chartInstances = {};
+        let mapInstance = null; 
+
+        const CITY_COORDS = { "Adaro Tanjung": [-2.1706, 115.3781], "Tanjung Redeb": [2.1465, 117.4812], "Balikpapan": [-1.2379, 116.8529], "Satui": [-3.7844, 115.4262], "HO (HO)": [-6.2088, 106.8456], "Jakarta (HO)": [-6.2088, 106.8456], "Jakarta": [-6.2088, 106.8456], "Timika": [-4.5292, 136.8853], "Banjarmasin": [-3.3167, 114.5901], "Samarinda": [-0.5022, 117.1536], "Sangatta": [0.4925, 117.5408], "Batukajang": [-1.8847, 115.9866], "Muaralawa": [-1.4390, 115.7925], "Ujung Pandang": [-5.1476, 119.4327], "Tanjung Enim": [-3.7547, 103.7915], "Semarang": [-6.9667, 110.4167], "Surabaya": [-7.2504, 112.7688], "Lampung": [-5.4500, 105.2667], "Palembang": [-2.9909, 104.7566], "Pekanbaru": [0.5333, 101.4500] };
+
+        function getMapCoordinates(inputCity) {
+            if (!inputCity) return null;
+            let search = inputCity.toLowerCase().trim();
+            for (let key in CITY_COORDS) { if (key.toLowerCase() === search || search.includes(key.toLowerCase()) || key.toLowerCase().includes(search)) return CITY_COORDS[key]; }
+            return null;
+        }
+
+        function kategorikanCancel(ket) {
+            if(!ket || String(ket).trim() === '') return 'Tanpa Keterangan';
+            let lowerKet = String(ket).toLowerCase();
+            if(lowerKet.includes('harga') || lowerKet.includes('tidak masuk')) return 'Harga';
+            if(lowerKet.includes('revisi')) return 'Revisi';
+            if(lowerKet.includes('dl') || lowerKet.includes('lama') || lowerKet.includes('quotation')) return 'Requotation';
+            if(lowerKet.includes('gabung') || lowerKet.includes('bersama') || lowerKet.includes('dijadikan 1')) return 'Reschedule';
+            if(lowerKet.includes('event') || lowerKet.includes('paket')) return 'Perubahan Paket Pelatihan';
+            if(lowerKet.includes('double')) return 'Double Input';
+            if(lowerKet.includes('perubahan nama') || lowerKet.includes('company') || lowerKet.includes('pt') || lowerKet.includes('customer')) return 'Perubahan Data Customer';
+            if(lowerKet.includes('jadwal')) return 'Reschedule';
+            return 'Alasan Lainnya';
+        }
+
+        function checkDateFilter(dateValue, filterStartDate, filterEndDate, filterBulan) {
+            if (!dateValue || dateValue === '-') return (!filterStartDate && filterBulan === 'ALL');
+            let rowDateStr = String(dateValue).trim();
+            let rowDate = new Date(rowDateStr);
+            if (isNaN(rowDate.getTime())) {
+                 let parts = rowDateStr.split(/[-/ T]/);
+                 if (parts.length >= 3 && parts[0].length === 2) rowDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            }
+            if (!isNaN(rowDate.getTime())) {
+                if (filterStartDate && filterEndDate) {
+                    let start = new Date(filterStartDate); start.setHours(0,0,0,0);
+                    let end = new Date(filterEndDate); end.setHours(23,59,59,999);
+                    return rowDate >= start && rowDate <= end;
+                } else if (filterBulan === 'YTD') {
+                    return rowDate.getFullYear() === new Date().getFullYear() && rowDate <= new Date();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        async function initDB() {
+            const loginBtn = document.getElementById('btnLogin');
+            if(loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> MENGHUBUNGKAN SUPABASE...'; }
+            
+            try {
+                const { data: salesData, error: salesError } = await sbClient.from('sales_data').select('*');
+                if (salesError) throw salesError;
+                
+                localDB.sales_data = salesData || [];
+                localDB.users = [{username: 'admin', password: '123', role: 'admin', active: true}];
+                localDB.logs = JSON.parse(localStorage.getItem('sales_backup_logs')) || [];
+                
+                if(loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = 'MASUK <i class="fas fa-arrow-right ms-2"></i>'; }
+            } catch (error) {
+                console.error("Supabase Error:", error);
+                if(loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = 'COBA LAGI <i class="fas fa-redo ms-2"></i>'; }
+                Swal.fire('Koneksi Gagal', 'Gagal memuat data dari Supabase. Periksa URL dan API Key.', 'error');
+            }
+        }
+
+        function getDB(key) { return localDB[key] || []; }
+
+        async function saveSalesDBWipeAndReplace(newData) {
+            localDB.sales_data = newData;
+            await sbClient.from('sales_data').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const chunkSize = 500;
+            for (let i = 0; i < newData.length; i += chunkSize) {
+                let chunk = newData.slice(i, i + chunkSize);
+                const { error } = await sbClient.from('sales_data').insert(chunk);
+                if (error) console.error("Error inserting chunk:", error);
+            }
+        }
+
+        function addLog(action, detail, extendedDetail = '') {
+            let logs = getDB('logs');
+            let logEntry = { id: 'LOG' + Date.now() + Math.random().toString(36).substr(2, 5), timestamp: new Date().toISOString(), username: currentUser ? currentUser.username : 'System', action: action, detail: detail, extendedDetail: extendedDetail };
+            logs.push(logEntry); localStorage.setItem('sales_backup_logs', JSON.stringify(logs));
+        }
+
+        function formatLogDate(isoString) { if(!isoString) return '-'; let d = new Date(isoString); return d.toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) + ' ' + d.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}); }
+        function togglePassword() { const pass = document.getElementById('password'); const icon = document.getElementById('eyeIcon'); if(pass.type === 'password') { pass.type = 'text'; icon.className = 'fas fa-eye-slash text-dark'; } else { pass.type = 'password'; icon.className = 'fas fa-eye text-muted'; } }
+        
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value.trim(); const p = document.getElementById('password').value; const users = getDB('users');
+            const user = users.find(x => x.username === u && x.password === p && x.active);
+            if(user) {
+                currentUser = user; document.getElementById('loginScreen').classList.add('d-none'); document.getElementById('appContainer').classList.remove('d-none'); document.getElementById('displayUserName').innerText = u.toUpperCase(); document.getElementById('displayUserInitial').innerText = u.charAt(0).toUpperCase(); document.getElementById('displayUserRole').innerText = user.role; Swal.mixin({ customClass: { confirmButton: 'btn btn-primary px-4', cancelButton: 'btn btn-outline-secondary px-4 me-2' }, buttonsStyling: false });
+                applyRolePermissions(); switchView('dashboard', document.querySelector('.nav-link-custom')); addLog('Login System', 'User masuk ke dalam sistem', 'Login berhasil melalui portal utama.');
+            } else { Swal.fire({title: 'Akses Ditolak', text: 'Username, password salah, atau akun non-aktif.', icon: 'error', confirmButtonColor: '#1A1A1A' }); }
+        }
+
+        function logout() { addLog('Logout System', 'User keluar dari sistem', 'Sesi diakhiri oleh user.'); setTimeout(() => { location.reload(); }, 500); }
+        function applyRolePermissions() { const edits = document.querySelectorAll('.edit-allowed'); edits.forEach(el => { if(currentUser.role === 'admin') { el.style.display = (el.tagName === 'TH' || el.tagName === 'TD') ? 'table-cell' : 'inline-block'; } else { el.style.display = 'none'; } }); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); setTimeout(() => { if(mapInstance) mapInstance.invalidateSize(); }, 350); }
+        function toggleFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => console.log(err.message)); } else { document.exitFullscreen(); } }
+        document.addEventListener('fullscreenchange', () => { let icon = document.getElementById('fsIcon'); icon.className = document.fullscreenElement ? 'fas fa-compress me-1' : 'fas fa-expand me-1'; setTimeout(() => { if(mapInstance) mapInstance.invalidateSize(); }, 350); });
+
+        function switchView(viewId, navEl) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active')); document.getElementById('view-' + viewId).classList.add('active');
+            document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active')); if(navEl) navEl.classList.add('active');
+            if(viewId === 'dashboard') renderDashboard(); if(viewId === 'sales') renderSalesTable(); if(viewId === 'users') renderUsers(); if(viewId === 'logs') renderLogsTable();
+        }
+
+        function parseAmount(val) { if(!val) return 0; if(typeof val === 'number') return Math.round(val); let str = String(val).replace(/[^0-9,-]+/g,"").replace(/\./g, "").replace(/,/g, ""); return parseInt(str) || 0; }
+        function formatRp(angka) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka); }
+
+        function renderDashboard() {
+            const data = getDB('sales_data');
+            const dashFilterStatus = document.getElementById('dashFilterStatus').value; 
+            const dashFilterBulan = document.getElementById('dashFilterBulan').value; 
+            const dashStartDate = document.getElementById('dashStartDate').value;
+            const dashEndDate = document.getElementById('dashEndDate').value;
+            
+            let totalRev = 0; let totalAmountFiltered = 0; let countFiltered = 0; let countInProgressOverall = 0;
+            let clients = {}; let matrix = {}; let monthsSet = new Set();
+            let statusCounts = { 'DEAL':0, 'ON PROGRESS':0, 'NEW':0, 'NO DEAL':0 }; let jenisCounts = {}; let cancelCounts = {}; let cityCountsMap = {}; let cityRealNamesMap = {}; 
+
+            data.forEach(row => {
+                let status = String(row.status_final || row.STATUS || '').toUpperCase().trim();
+                if(status === 'PENDING') status = 'ON PROGRESS'; 
+
+                let amt = parseAmount(row.nilai || row.amount);
+                let clientName = row.customer || row['Cust name'] || 'Unknown';
+                let bulan = String(row.month_name || row.MONTH || '-').toUpperCase().trim();
+                let jenis = row.jenis || 'Lainnya';
+                let lokasiRaw = (row.lokasi || '').trim();
+
+                let isPassedBulan = true;
+                if ((dashStartDate && dashEndDate) || dashFilterBulan === 'YTD') {
+                    isPassedBulan = checkDateFilter(row.tgl_dibuat || row['Tgl Dibuat'], dashStartDate, dashEndDate, dashFilterBulan);
+                } else if (dashFilterBulan !== 'ALL' && bulan !== dashFilterBulan) {
+                    isPassedBulan = false;
+                }
+
+                let isPassedStatus = (dashFilterStatus === 'ALL' || status === dashFilterStatus);
+
+                if(isPassedBulan) {
+                    if(statusCounts[status] !== undefined) statusCounts[status]++;
+                    if (status === 'ON PROGRESS') countInProgressOverall++;
+                    if (status === 'CANCEL' || status === 'NO DEAL') {
+                        let keteranganRaw = row.keterangan || row['Keterangan'] || '';
+                        let alasanKategori = kategorikanCancel(keteranganRaw);
+                        if(!cancelCounts[alasanKategori]) cancelCounts[alasanKategori] = 0;
+                        cancelCounts[alasanKategori]++;
+                    }
+                }
+
+                if (isPassedStatus && isPassedBulan) {
+                    countFiltered++; totalAmountFiltered += amt;
+                    if (dashFilterStatus === 'ALL' && status === 'DEAL') { totalRev += amt; } 
+                    else if (dashFilterStatus !== 'ALL') { totalRev += amt; }
+                    
+                    if(!clients[clientName]) clients[clientName] = 0; clients[clientName] += amt;
+                    if(!jenisCounts[jenis]) jenisCounts[jenis] = 0; jenisCounts[jenis]++;
+                    if(!matrix[jenis]) matrix[jenis] = {}; if(!matrix[jenis][bulan]) matrix[jenis][bulan] = 0;
+                    matrix[jenis][bulan]++; monthsSet.add(bulan);
+                    if(lokasiRaw !== '') { let cleanName = lokasiRaw.toLowerCase().replace(/kabupaten|kab\.|kota/gi, '').trim(); cityCountsMap[cleanName] = (cityCountsMap[cleanName] || 0) + 1; cityRealNamesMap[cleanName] = lokasiRaw; }
+                }
+            });
+
+            document.getElementById('kpiTitleRev').innerText = dashFilterStatus === 'ALL' ? 'TOTAL PROJECT AMOUNT (DEAL)' : `TOTAL PROJECT AMOUNT (${dashFilterStatus})`;
+            document.getElementById('kpiTitleTotalAmount').innerText = dashFilterStatus === 'ALL' ? 'TOTAL POTENTIAL AMOUNT PROJECT' : `TOTAL POTENTIAL AMOUNT PROJECT (${dashFilterStatus})`;
+            document.getElementById('kpiTitlePending').innerText = dashFilterStatus === 'ALL' ? 'PROJEK TERTUNDA (ON PROGRESS)' : `PROJEK (${dashFilterStatus})`;
+            document.getElementById('kpiRevenue').innerText = formatRp(totalRev);
+            document.getElementById('kpiTotalAmount').innerText = formatRp(totalAmountFiltered);
+            document.getElementById('kpiTotalDeal').innerText = countFiltered;
+            document.getElementById('kpiTotalPending').innerText = dashFilterStatus === 'ALL' ? countInProgressOverall : countFiltered;
+            
+            let dealPct = totalAmountFiltered === 0 ? "0" : ((totalRev / totalAmountFiltered) * 100).toFixed(1);
+            document.getElementById('kpiDealPercent').innerHTML = `<i class="fas fa-bullseye text-primary me-1"></i> ${dealPct}% dari Potential Amount`;
+
+            let topClient = Object.keys(clients).sort((a,b) => clients[b] - clients[a])[0] || 'Belum Ada';
+            document.getElementById('dashGreeting').innerText = `Halo, ${currentUser ? currentUser.username.toUpperCase() : 'ADMIN'}.`;
+            
+            let textBulanBanner = '';
+            if (dashStartDate && dashEndDate) textBulanBanner = ` pada periode ${dashStartDate} hingga ${dashEndDate}`;
+            else if (dashFilterBulan === 'YTD') textBulanBanner = ` sepanjang tahun ini (YTD)`;
+            else if (dashFilterBulan !== 'ALL') textBulanBanner = ` di bulan ${dashFilterBulan}`;
+
+            document.getElementById('dashStory').innerHTML = `Sistem Enterprise saat ini mengelola <strong>${countFiltered} data projek terdaftar</strong>${textBulanBanner} dengan total <em>revenue</em> ${dashFilterStatus === 'ALL' ? 'DEAL' : dashFilterStatus} mencapai <strong>${formatRp(totalRev)}</strong>. Kekuatan *sales* terbesar saat ini berpusat pada klien <strong>${topClient}</strong>.`;
+
+            const monthOrder = { "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6, "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12 };
+            let arrMonths = Array.from(monthsSet).sort((a, b) => (monthOrder[a] || 99) - (monthOrder[b] || 99));
+
+            let htmlMatriks = `<thead class="table-dark"><tr><th class="text-start">Jenis Projek</th>${arrMonths.map(m => `<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+            for(let jns in matrix) {
+                htmlMatriks += `<tr><td class="fw-bold text-start text-dark">${jns}</td>`;
+                let rowTotal = 0; arrMonths.forEach(m => { let val = matrix[jns][m] || 0; rowTotal += val; htmlMatriks += `<td class="${val>0?'fw-semibold':''}">${val > 0 ? val : '-'}</td>`; });
+                htmlMatriks += `<td class="fw-bold bg-light text-dark">${rowTotal}</td></tr>`;
+            }
+            document.getElementById('tblMatriksDashboard').innerHTML = htmlMatriks + `</tbody>`;
+
+            const utColors = ['#FFC000', '#1A1A1A', '#718096', '#3b82f6', '#22c55e', '#ef4444'];
+            if(chartInstances['chartClient']) chartInstances['chartClient'].destroy();
+            let sortedClients = Object.keys(clients).sort((a,b) => clients[b] - clients[a]).slice(0, 5);
+            chartInstances['chartClient'] = new Chart(document.getElementById('chartClient').getContext('2d'), { type: 'doughnut', data: { labels: sortedClients, datasets: [{ data: sortedClients.map(c => clients[c]), backgroundColor: utColors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, textStrokeColor: '#1A1A1A', textStrokeWidth: 2, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (sum === 0 || value === 0) return null; let pct = (value * 100 / sum); return pct < 4 ? null : pct.toFixed(1) + "%"; } } } } });
+
+            if(chartInstances['chartStatus']) chartInstances['chartStatus'].destroy();
+            let sortedStatusKeys = ['DEAL', 'ON PROGRESS', 'NEW', 'NO DEAL'];
+            chartInstances['chartStatus'] = new Chart(document.getElementById('chartStatus').getContext('2d'), { type: 'bar', data: { labels: sortedStatusKeys, datasets: [{ label: 'Jumlah Projek', data: sortedStatusKeys.map(k => statusCounts[k]), backgroundColor: ['#22c55e', '#718096', '#14b8a6', '#ef4444'], borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, textStrokeColor: '#1A1A1A', textStrokeWidth: 2, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); return sum === 0 || value === 0 ? null : (value * 100 / sum).toFixed(1) + "%"; } } }, scales: { y: { beginAtZero: true } } } });
+
+            if(chartInstances['chartJenis']) chartInstances['chartJenis'].destroy();
+            chartInstances['chartJenis'] = new Chart(document.getElementById('chartJenis').getContext('2d'), { type: 'pie', data: { labels: Object.keys(jenisCounts), datasets: [{ data: Object.values(jenisCounts), backgroundColor: utColors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, textStrokeColor: '#1A1A1A', textStrokeWidth: 2, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (sum === 0 || value === 0) return null; let pct = (value * 100 / sum); return pct < 4 ? null : pct.toFixed(1) + "%"; } } } } });
+
+            if(chartInstances['chartCancel']) chartInstances['chartCancel'].destroy();
+            let sortedCancelKeys = Object.keys(cancelCounts).sort((a,b) => cancelCounts[b] - cancelCounts[a]).slice(0, 5);
+            chartInstances['chartCancel'] = new Chart(document.getElementById('chartCancel').getContext('2d'), { type: 'pie', data: { labels: sortedCancelKeys, datasets: [{ data: sortedCancelKeys.map(k => cancelCounts[k]), backgroundColor: ['#ef4444', '#f97316', '#8b5cf6', '#64748b', '#cbd5e1'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', onClick: function(e, li) { openCancelListModal(li.text); } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, textStrokeColor: '#1A1A1A', textStrokeWidth: 2, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (sum === 0 || value === 0) return null; let pct = (value * 100 / sum); return pct < 4 ? null : pct.toFixed(1) + "%"; } } }, onClick: function(e, elements, chart) { if (elements.length > 0) openCancelListModal(chart.data.labels[elements[0].index]); }, onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; } } });
+
+            if(chartInstances['chartTrend']) chartInstances['chartTrend'].destroy();
+            let dataTrendDeal = arrMonths.map(m => { let sum = 0; data.forEach(r => { let isPassed = ((dashStartDate && dashEndDate) || dashFilterBulan === 'YTD') ? checkDateFilter(r.tgl_dibuat || r['Tgl Dibuat'], dashStartDate, dashEndDate, dashFilterBulan) : true; if(isPassed && (r.month_name || r.MONTH || '-') === m && String(r.status_final || r.STATUS || '').toUpperCase().trim() === 'DEAL') sum += parseAmount(r.nilai || r.amount); }); return sum; });
+            let dataTrendForecast = arrMonths.map(m => { let sum = 0; data.forEach(r => { let isPassed = ((dashStartDate && dashEndDate) || dashFilterBulan === 'YTD') ? checkDateFilter(r.tgl_dibuat || r['Tgl Dibuat'], dashStartDate, dashEndDate, dashFilterBulan) : true; let st = String(r.status_final || r.STATUS || '').toUpperCase().trim(); if(st === 'PENDING') st = 'ON PROGRESS'; if(isPassed && (r.month_name || r.MONTH || '-') === m && (st === 'DEAL' || st === 'ON PROGRESS')) sum += parseAmount(r.nilai || r.amount); }); return sum; });
+            chartInstances['chartTrend'] = new Chart(document.getElementById('chartTrend').getContext('2d'), { type: 'line', data: { labels: arrMonths, datasets: [{ label: 'Aktual (DEAL)', data: dataTrendDeal, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.1)', fill: true, tension: 0.4, borderWidth: 3 }, { label: 'Total Potensi', data: dataTrendForecast, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.4, borderWidth: 3, borderDash: [5, 5] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { display: false }, tooltip: { callbacks: { afterLabel: function(ctx) { let dealVal = dataTrendDeal[ctx.dataIndex] || 0; let totalPotensi = dataTrendForecast[ctx.dataIndex] || 0; if(totalPotensi === 0) return 'Pencapaian: 0%'; return `Pencapaian (Win Rate): ${((dealVal / totalPotensi) * 100).toFixed(1)}% dari total potensi`; } } } }, scales: { y: { beginAtZero: true } } } });
+
+            initAndPlotMap(cityCountsMap, cityRealNamesMap);
+        }
+
+        let cancelListModalInst; let cancelDetailModalInst;
+        function openCancelListModal(reason) {
+            if(cancelDetailModalInst) cancelDetailModalInst.hide();
+            setTimeout(() => {
+                const data = getDB('sales_data');
+                const dashFilterBulan = document.getElementById('dashFilterBulan').value;
+                const dashStartDate = document.getElementById('dashStartDate').value;
+                const dashEndDate = document.getElementById('dashEndDate').value;
+                document.getElementById('titleCancelList').innerText = `Daftar Projek Cancel: ${reason}`;
+
+                let filtered = data.filter(row => {
+                    let status = String(row.status_final || row.STATUS || '').toUpperCase().trim();
+                    let ketRaw = row.keterangan || row['Keterangan'] || '';
+                    let bulan = String(row.month_name || row.MONTH || '-').toUpperCase().trim();
+                    let isPassedBulan = true;
+                    if ((dashStartDate && dashEndDate) || dashFilterBulan === 'YTD') {
+                        isPassedBulan = checkDateFilter(row.tgl_dibuat || row['Tgl Dibuat'], dashStartDate, dashEndDate, dashFilterBulan);
+                    } else if (dashFilterBulan !== 'ALL' && bulan !== dashFilterBulan) { isPassedBulan = false; }
+                    
+                    if(isPassedBulan && (status === 'CANCEL' || status === 'NO DEAL')) { return kategorikanCancel(ketRaw) === reason; }
+                    return false;
+                });
+
+                let tbody = document.querySelector('#tblCancelList tbody'); let html = '';
+                if(filtered.length === 0) { html = `<tr><td colspan="4" class="text-center py-4 text-muted">Tidak ada data.</td></tr>`; } 
+                else { filtered.forEach(f => { let judul = f.judul_projek || f['Judul Projek'] || '-'; let noProj = f.no_projek || f['No. Projek']; html += `<tr><td><span class="badge bg-secondary">${f.jenis || f.Jenis || '-'}</span></td><td class="fw-bold text-dark text-truncate" style="max-width:200px;" title="${judul}">${judul}</td><td>${f.customer || f['Cust name'] || f.Customer || '-'}</td><td class="text-center"><button class="btn btn-sm btn-dark fw-bold" onclick="openCancelDetailModal('${noProj}')">See More <i class="fas fa-arrow-right ms-1"></i></button></td></tr>`; }); }
+                tbody.innerHTML = html;
+                if(!cancelListModalInst) cancelListModalInst = new bootstrap.Modal(document.getElementById('modalCancelList'));
+                cancelListModalInst.show();
+            }, 300);
+        }
+
+        function openCancelDetailModal(noProjek) {
+            if(cancelListModalInst) cancelListModalInst.hide();
+            setTimeout(() => {
+                const data = getDB('sales_data');
+                const p = data.find(x => String(x.no_projek || x['No. Projek']) === String(noProjek));
+                if(!p) return;
+
+                let ketDetail = p.keterangan || p['Keterangan'] || '-';
+                document.getElementById('detCancelJudul').innerText = p.judul_projek || p['Judul Projek'] || '-';
+                document.getElementById('detCancelNo').innerText = "No. Projek : " + (p.no_projek || p['No. Projek'] || '-');
+                document.getElementById('detCancelCustomer').innerText = p.customer || p['Cust name'] || p.Customer || '-';
+                document.getElementById('detCancelJenis').innerText = p.jenis || p.Jenis || '-';
+                document.getElementById('detCancelNilai').innerText = formatRp(parseAmount(p.nilai || p.amount || p.Nilai));
+                document.getElementById('detCancelKeterangan').innerText = ketDetail.trim() === '' ? '-' : ketDetail;
+
+                if(!cancelDetailModalInst) cancelDetailModalInst = new bootstrap.Modal(document.getElementById('modalCancelDetail'));
+                cancelDetailModalInst.show();
+            }, 300);
+        }
+
+        function initAndPlotMap(cityCounts, cityRealNames) {
+            if(mapInstance !== null) { mapInstance.remove(); }
+            mapInstance = L.map('mapLokasi', { scrollWheelZoom: false }).setView([-2.5, 118.0], 4.5);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap & CartoDB' }).addTo(mapInstance);
+            for (let cleanKota in cityCounts) {
+                let coords = getMapCoordinates(cleanKota);
+                if (coords) {
+                    L.circleMarker(coords, { radius: 10, fillColor: "#facc15", color: "#0f172a", weight: 2, opacity: 1, fillOpacity: 0.95 })
+                      .bindPopup(`<div style="text-align:center;"><b>${cityRealNames[cleanKota]}</b><br><span style="font-size:1.1rem;font-weight:bold;">${cityCounts[cleanKota]}</span> Projek Terdaftar</div>`).addTo(mapInstance);
+                }
+            }
+            setTimeout(() => { mapInstance.invalidateSize(); }, 500);
+        }
+
+        let currentSort = { col: 'tgl_dibuat', asc: false };
+
+        function setSortSales(columnName) {
+            if(currentSort.col === columnName) { currentSort.asc = !currentSort.asc; } else { currentSort.col = columnName; currentSort.asc = true; }
+            renderSalesTable(); 
+        }
+
+        function renderSalesTable() {
+            let data = [...getDB('sales_data')]; 
+            const searchVal = (document.getElementById('searchSales')?.value || '').toLowerCase();
+            const tbody = document.querySelector('#tblSales tbody');
+            
+            data.sort((a, b) => {
+                let valA = a[currentSort.col] || a[currentSort.col.replace('_', ' ')] || ''; 
+                let valB = b[currentSort.col] || b[currentSort.col.replace('_', ' ')] || '';
+                if(currentSort.col === 'nilai' || currentSort.col === 'amount') { valA = parseAmount(valA); valB = parseAmount(valB); } 
+                else if(currentSort.col === 'no_projek' || currentSort.col === 'tgl_dibuat') { valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase(); }
+                if(valA < valB) return currentSort.asc ? -1 : 1;
+                if(valA > valB) return currentSort.asc ? 1 : -1;
+                return 0;
+            });
+
+            let html = '';
+            data.forEach(row => {
+                let no = row.no_projek || row['No. Projek']; 
+                let client = row.customer || row['Cust name'] || row.Customer; 
+                let title = row.judul_projek || row['Judul Projek'];
+                let amt = parseAmount(row.nilai || row.amount); 
+                let status = String(row.status_final || row.STATUS || '').toUpperCase().trim();
+                if(status === 'PENDING') status = 'ON PROGRESS';
+                let statClass = status === 'DEAL' ? 'bg-success' : status === 'NO DEAL' ? 'bg-danger' : status === 'NEW' ? 'bg-info text-dark' : 'bg-warning text-dark';
+                
+                if (String(no).toLowerCase().includes(searchVal) || String(client).toLowerCase().includes(searchVal) || String(title).toLowerCase().includes(searchVal)) {
+                    html += `<tr>
+                        <td><strong>${no}</strong><br><small class="text-muted">${row.tgl_dibuat || row['Tgl Dibuat'] || '-'}</small></td>
+                        <td><div class="fw-bold text-dark text-truncate" style="max-width:250px;" title="${title}">${title}</div><span class="badge border text-dark mt-1">${row.jenis || row.Jenis}</span></td>
+                        <td class="fw-medium">${client}</td>
+                        <td>${row.lokasi || row.Lokasi || '-'}</td>
+                        <td class="fw-bold text-primary">${formatRp(amt)}</td>
+                        <td><span class="badge ${statClass} px-3 py-2">${status}</span></td>
+                    </tr>`;
+                }
+            });
+            tbody.innerHTML = html || `<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-folder-open fs-2 mb-2"></i><br>Tidak ada data projek ditemukan.</td></tr>`;
+        }
+
+        function parseExcelDate(serial) { 
+            if (typeof serial === 'number') return new Date((Math.floor(serial - 25569) * 86400) * 1000).toISOString().split('T')[0]; 
+            if (typeof serial === 'string') { let d = new Date(serial); if(!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } return serial; 
+        }
+
+        function downloadTemplate() { 
+            const wb = XLSX.utils.book_new(); 
+            const templateHeaders = [ 'tgl_dibuat', 'jenis', 'no_projek', 'judul_projek', 'customer', 'pic_customer', 'nilai', 'status_awal', 'tgl_approval', 'keterangan', 'no_proposal', 'no_quotation', 'no_po_spk', 'no_invoice', 'no_bast_p', 'no_lpj', 'dibuat_oleh', 'lokasi' ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([templateHeaders]), "Data_Sales"); 
+            XLSX.writeFile(wb, "Template_Sales_Supabase.xlsx"); 
+            addLog('Download Template', 'Mengunduh template Excel Supabase V2');
+        }
+
+        function handleImportExcel(e) {
+            const file = e.target.files[0]; if(!file) return;
+            Swal.fire({ title: 'Menyelaraskan Supabase...', html: 'Membersihkan data lama dan mengunggah ke cloud...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => { Swal.showLoading() } });
+            
+            const r = new FileReader(); 
+            r.onload = async (evt) => { 
+               let rawData = XLSX.read(evt.target.result, {type:'binary'});
+               let parsedData = XLSX.utils.sheet_to_json(rawData.Sheets[rawData.SheetNames[0]]);
+               
+               let dataDB = []; let added = 0; 
+                
+               parsedData.forEach(row => { 
+                   let no_projek = row.no_projek || row['No. Projek'];
+                   if(no_projek) { 
+                       // Strict Date Nulling 
+                       let rawDate = row.tgl_dibuat || row['Tgl Dibuat'];
+                       let parsedDate = null;
+                       if (rawDate && rawDate !== '-' && rawDate !== '0000-00-00') {
+                           let tempDate = parseExcelDate(rawDate);
+                           if (tempDate !== '0000-00-00') parsedDate = tempDate;
+                       }
+                       
+                       let rawAppDate = row.tgl_approval || row['Tgl Approval'];
+                       let parsedAppDate = null;
+                       if (rawAppDate && rawAppDate !== '-' && rawAppDate !== '0000-00-00') {
+                           let tempAppDate = parseExcelDate(rawAppDate);
+                           if (tempAppDate !== '0000-00-00') parsedAppDate = tempAppDate;
+                       }
+
+                       let calculatedMonth = 'JAN';
+                       if (parsedDate) {
+                           let d = new Date(parsedDate);
+                           if (!isNaN(d.getTime())) {
+                               const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                               calculatedMonth = monthNames[d.getMonth()];
+                           }
+                       }
+                       
+                       let rowData = {
+                           tgl_dibuat: parsedDate,
+                           jenis: row.jenis || row['Jenis'],
+                           no_projek: no_projek.toString().trim(),
+                           judul_projek: row.judul_projek || row['Judul Projek'],
+                           customer: row.customer || row['Customer'] || row['Cust name'],
+                           pic_customer: row.pic_customer || row['PIC Customer'],
+                           nilai: row.nilai !== undefined ? row.nilai : (row['Nilai'] !== undefined ? row['Nilai'] : (row['amount'] !== undefined ? row['amount'] : 0)),
+                           status_awal: (row.status_awal || row['Status'] || '').toUpperCase().trim(),
+                           tgl_approval: parsedAppDate,
+                           keterangan: row.keterangan || row['Keterangan'],
+                           no_proposal: row.no_proposal || row['No. Proposal'],
+                           no_quotation: row.no_quotation || row['No. Quotation'] || row['Quotation'],
+                           no_po_spk: row.no_po_spk || row['No. PO/SPK'] || row['PO/SPK'],
+                           no_invoice: row.no_invoice || row['No. Invoice'] || row['Invoice'],
+                           no_bast_p: row.no_bast_p || row['No. BAST/P'] || row['BAST/P'],
+                           no_lpj: row.no_lpj || row['No. LPJ'] || row['Dok. LPJ'],
+                           dibuat_oleh: row.dibuat_oleh || row['Dibuat/Diteruskan Oleh'],
+                           lokasi: row.lokasi || row['Lokasi'],
+                           month_name: calculatedMonth
+                       };
+
+                       dataDB.push(rowData); added++; 
+                   } 
+               }); 
+               
+               await saveSalesDBWipeAndReplace(dataDB); 
+               addLog('Import Data (Supabase)', `Menyelaraskan ${added} data ke Supabase.`);
+               
+               await initDB(); renderSalesTable(); renderDashboard();
+               Swal.close(); Swal.fire('Cloud Sync Berhasil', `${added} data projek berhasil disinkronisasikan ke Supabase.`, 'success'); 
+               e.target.value = ''; 
+            }; 
+            r.readAsBinaryString(file);
+        }
+
+        function generateReport() {
+            const statFilter = document.getElementById('reportFilterStatus').value; const blnFilter = document.getElementById('reportFilterBulan').value; 
+            const data = getDB('sales_data');
+            
+            let filtered = data.filter(s => {
+                let statusNormalize = String(s.status_final || s.STATUS || '').toUpperCase().trim();
+                if(statusNormalize === 'PENDING') statusNormalize = 'ON PROGRESS';
+                let matchStat = statFilter === 'ALL' || statusNormalize === statFilter;
+                let matchBln = blnFilter === 'ALL' || String(s.month_name || s.MONTH).toUpperCase() === blnFilter;
+                return matchStat && matchBln;
+            });
+            
+            let html = '';
+            filtered.forEach(e => {
+                let amt = parseAmount(e.nilai || e.amount);
+                let stat = String(e.status_final || e.STATUS || '').toUpperCase().trim();
+                if(stat === 'PENDING') stat = 'ON PROGRESS';
+                let badgeClass = stat === 'DEAL' ? 'bg-success' : stat === 'NO DEAL' ? 'bg-danger' : stat === 'NEW' ? 'bg-info text-dark' : 'bg-warning text-dark';
+                
+                html += `<tr><td>${e.tgl_dibuat || e['Tgl Dibuat'] || '-'}</td><td><strong>${e.no_projek || e['No. Projek']}</strong></td><td class="fw-medium text-truncate" style="max-width:200px;" title="${e.judul_projek || e['Judul Projek']}">${e.judul_projek || e['Judul Projek']}</td><td>${e.jenis || e.Jenis}</td><td>${e.customer || e['Cust name']}</td><td>${e.month_name || e.MONTH}</td><td class="text-end fw-bold">${formatRp(amt)}</td><td class="text-center"><span class="badge ${badgeClass}">${stat}</span></td></tr>`;
+            });
+            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="8" class="text-center py-4">Data tidak ditemukan</td></tr>'; addLog('Filter Laporan', `User menarik laporan (Status: ${statFilter}, Bulan: ${blnFilter})`);
+        }
+        
+        function exportReportExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tblReport'), {sheet:"Report"}), "Laporan_Revenue_UT.xlsx"); addLog('Export Laporan', 'Mencetak Laporan Revenue ke Excel'); }
+        function exportReportPDF() { const doc = new window.jspdf.jsPDF('landscape'); doc.setFontSize(16); doc.text("Laporan Sales Canvasing UT", 14, 22); doc.setFontSize(10); doc.text("Diekstrak oleh: " + (currentUser ? currentUser.username : 'System') + " | Pada: " + new Date().toLocaleDateString(), 14, 28); doc.autoTable({ html: '#tblReport', startY: 34, theme: 'grid', headStyles: { fillColor: [26, 26, 26], textColor: [255, 192, 0] } }); doc.save('Laporan_Revenue_UT.pdf'); addLog('Export Laporan', 'Mencetak Laporan Revenue ke PDF'); }
+        
+        function viewLogDetail(logId) { let log = getDB('logs').find(l => String(l.id) === String(logId)); if(!log) return; Swal.fire({ title: '<div class="fs-4 fw-bold">Detail Perubahan</div>', html: `<div class="text-start text-dark p-3 rounded" style="max-height: 350px; overflow-y: auto; background-color: #F8FAFC; border: 1px solid #E2E8F0; font-family: monospace; white-space: pre-wrap; font-size: 0.85rem; line-height: 1.5;">${log.extendedDetail || log.extendeddetail || 'Tidak ada riwayat detail tambahan.'}</div>`, confirmButtonColor: '#1A1A1A', confirmButtonText: 'Tutup', width: 600 }); }
+        function renderLogsTable() { const logs = getDB('logs').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); const tbody = document.querySelector('#tblLogs tbody'); let html = ''; logs.forEach(l => { let badgeColor = 'bg-secondary'; if(l.action.includes('Import')) badgeColor = 'bg-success'; else if(l.action.includes('Hapus')) badgeColor = 'bg-danger'; else if(l.action.includes('Login')) badgeColor = 'bg-primary text-dark'; html += `<tr><td><small class="text-muted fw-bold">${formatLogDate(l.timestamp)}</small></td><td><strong class="text-primary">${l.username}</strong></td><td><span class="badge ${badgeColor}">${l.action}</span></td><td class="text-muted small">${l.detail}</td><td class="text-center"><button class="btn btn-sm btn-outline-dark fw-bold" onclick="viewLogDetail('${l.id}')"><i class="fas fa-list me-1"></i> Detail</button></td></tr>`; }); tbody.innerHTML = html || `<tr><td colspan="5" class="text-center py-5 text-muted">Belum ada catatan aktivitas.</td></tr>`; }
+        
+        let userModalInst;
+        function renderUsers() { const users = getDB('users'); const tbody = document.querySelector('#tblUsers tbody'); let html = ''; users.forEach((u, i) => { html += `<tr><td class="fw-bold">${u.username}</td><td><span class="badge border border-dark text-dark">${u.role.toUpperCase()}</span></td><td><span class="badge ${u.active ? 'bg-success' : 'bg-danger'}">${u.active ? 'Aktif' : 'Non-aktif'}</span></td><td class="text-center"><button class="btn btn-sm btn-outline-dark fw-bold" onclick="toggleUser(${i})"><i class="fas fa-power-off text-danger"></i></button></td></tr>`; }); tbody.innerHTML = html; }
+        function openUserModal() { document.getElementById('formUser').reset(); if(!userModalInst) userModalInst = new bootstrap.Modal(document.getElementById('modalUser')); userModalInst.show(); }
+        function saveUser() { let users = getDB('users'); let u = document.getElementById('usrName').value.trim(); let p = document.getElementById('usrPass').value; let r = document.getElementById('usrRole').value; if(users.find(x => x.username === u)) return Swal.fire('Error', 'Username sudah terpakai', 'error'); users.push({username: u, password: p, role: r, active: true}); userModalInst.hide(); renderUsers(); Swal.fire('Sukses', 'Akun berhasil dibuat', 'success'); addLog('Buat Akun', `Admin membuat akun baru: ${u}`); }
+        function toggleUser(idx) { let users = getDB('users'); if(users[idx].username === 'admin') return Swal.fire('Ditolak', 'Akun Master Admin tidak dapat dimatikan.', 'error'); users[idx].active = !users[idx].active; renderUsers(); addLog('Update Akun', `Status akun ${users[idx].username} diubah menjadi ${users[idx].active}`); }
+
+        document.addEventListener("DOMContentLoaded", () => { setTimeout(() => { initDB(); }, 500); });
+    </script>
+</body>
+</html>
