@@ -1432,8 +1432,8 @@
           return 'Lainnya';
         }
         function getRowCategory(row) {
-            const existing = String(row['Category'] || '').trim();
-            return existing || getCustomerCategory(row['Cust name'] || row['Customer']);
+            // Selalu dihitung dari nama customer memakai aturan terbaru (abaikan nilai lama di sheet)
+            return getCustomerCategory(row['Cust name'] || row['Customer']);
         }
 
         // --- DASHBOARD ANALYTICS ---
