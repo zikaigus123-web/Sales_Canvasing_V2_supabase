@@ -1053,7 +1053,7 @@
         // ==========================================
         // KONFIGURASI DATABASE GOOGLE SHEETS
         // ==========================================
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBsurLQNw9LIE7GP5ebCqXxym6HWMG8m__zYQkpCSReAGv1rQLw_-xnVd0lV8GNwJ2SA/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgL7dXrSFmRzq0cVIQnjByb7ym4Q6em2RGqiLgxkNpEmXeWveTw4qs4GsPH9ioFBpUqw/exec'; 
 
         const DB_KEY_SALES = 'sales_data';
         const DB_KEY_USR   = 'sales_users';
@@ -1392,13 +1392,44 @@
 
         // --- KATEGORI CUSTOMER (Perusahaan / Instansi / Pemerintahan / Lainnya) ---
         function getCustomerCategory(name) {
-            const n = String(name || '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-            if (!n) return 'Lainnya';
-            if (/^(PT|CV|KOPERASI|KOP|UD|PD|FIRMA)\b/.test(n)) return 'Perusahaan';
-            if (/\b(DINAS|UPTD|UPT|BLK|PEMERINTAH|PEMKAB|PEMKOT|PEMPROV|PEMDA|KEMENTERIAN|KEMENAKER|KEMENPERIN|BAPPEDA|BKPSDM|BPSDM|DPRD)\b/.test(n)) return 'Pemerintahan';
-            if (/\b(SMK|SMKN|SMKS|SMA|SMAN|SMP|SMPN|SD|SDN|MAN|MTS|MTSN|STM|SEKOLAH|SCHOOL|UNIVERSITAS|UNIV|POLITEKNIK|POLTEK|INSTITUT|AKADEMI|KAMPUS|PESANTREN|YAYASAN|LPK)\b/.test(n)) return 'Instansi';
-            if (/\b(PT|CV|KOPERASI|TBK|PERSERO|CORP|LTD|INC)\b/.test(n)) return 'Perusahaan';
-            return 'Lainnya';
+          const raw = String(name || '').trim();
+          const n = raw.toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+          if (!n) return 'Lainnya';
+
+          // 1. Lembaga / LSP -> LSP ABI
+          if (/\b(LEMBAGA|LSP)\b/.test(n)) return 'LSP ABI';
+
+          // 2. PT United Tractors (semua lokasi / cabang / site / typo)
+          if (/\bUNITED\s+TRAC\w*/.test(n)) return 'PT United Tractors';
+
+          // 3. PT lain -> kategori = nama perusahaan (tanpa lokasi / Tbk), huruf kapital rapi
+          if (/^PT\b/.test(n)) {
+            let base = raw.replace(/\(.*?\)|\[.*?\]/g, ' ')
+                          .split(/\s+-\s+|\s*[\/,]\s*|\bsite\b|\bcabang\b|\bcab\b|\bunit\b/i)[0];
+            base = base.replace(/\bTbk\b\.?/gi, ' ').replace(/[^A-Za-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+            const words = base.split(' ').filter(Boolean).map((w, i) => {
+              const u = w.toUpperCase();
+              if (i === 0 && u === 'PT') return 'PT';
+              return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+            });
+            return words.length > 1 ? words.join(' ') : 'Perusahaan';
+          }
+
+          // 4. Badan usaha lain
+          if (/^(CV|KOPERASI|KOP|UD|PD|FIRMA)\b/.test(n)) return 'Perusahaan';
+
+          // 5. Pemerintahan
+          if (/\b(DINAS|UPTD|UPT|BLK|PEMERINTAH|PEMKAB|PEMKOT|PEMPROV|PEMDA|KEMENTERIAN|KEMENAKER|KEMENPERIN|BAPPEDA|BKPSDM|BPSDM|DPRD)\b/.test(n)) return 'Pemerintahan';
+
+          // 6. Instansi (sekolah, kampus, balai, dll)
+          if (/\b(BALAI|SMK|SMKN|SMKS|SMA|SMAN|SMP|SMPN|SD|SDN|MAN|MTS|MTSN|STM|SEKOLAH|SCHOOL|UNIVERSITAS|UNIV|POLITEKNIK|POLTEK|INSTITUT|AKADEMI|KAMPUS|PESANTREN|YAYASAN|LPK)\b/.test(n)) return 'Instansi';
+
+          if (/\b(TBK|PERSERO|CORP|LTD|INC)\b/.test(n)) return 'Perusahaan';
+
+          // 7. Nama perorangan (2-4 kata huruf biasa, tanpa angka) -> Instansi
+          if (/^(BPK|BAPAK|IBU|MR|MRS|MS)\s/.test(n) || (/^[A-Za-z.' ]+$/.test(raw) && n.split(' ').length >= 2 && n.split(' ').length <= 4)) return 'Instansi';
+
+          return 'Lainnya';
         }
         function getRowCategory(row) {
             const existing = String(row['Category'] || '').trim();
