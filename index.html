@@ -392,7 +392,7 @@
 
 
         /* --- MATRIKS KONTRIBUSI: muat penuh tanpa scroll --- */
-        .matrix-wrap { width: 100%; overflow: visible; }
+        .matrix-wrap { width: 100%; overflow: visible; container-type: inline-size; }
         .matrix-fit { table-layout: fixed; width: 100%; font-size: 0.7rem; }
         .matrix-fit th, .matrix-fit td {
             padding: 6px 2px !important;
@@ -404,6 +404,17 @@
         .matrix-fit th { font-size: 0.64rem; letter-spacing: 0; }
         .matrix-fit th:first-child, .matrix-fit td:first-child { width: 20%; padding-left: 6px !important; }
         .matrix-fit th:last-child, .matrix-fit td:last-child { width: 9%; }
+
+
+        @container (min-width: 520px) {
+            .matrix-fit th, .matrix-fit td { padding: 10px 3px !important; font-size: 0.8rem; }
+            .matrix-fit th { font-size: 0.72rem; }
+            .matrix-fit th:first-child, .matrix-fit td:first-child { width: 18%; padding-left: 10px !important; }
+        }
+        @container (min-width: 760px) {
+            .matrix-fit th, .matrix-fit td { padding: 12px 4px !important; font-size: 0.9rem; }
+            .matrix-fit th { font-size: 0.8rem; }
+        }
 
         /* --- TATA LETAK BARU: FULLSCREEN CSS --- */
         :fullscreen .sidebar { display: none !important; }
@@ -529,7 +540,7 @@
         }
         
         :fullscreen #view-dashboard .matrix-fit th,
-        :fullscreen #view-dashboard .matrix-fit td { padding: 4px 2px; }
+        :fullscreen #view-dashboard .matrix-fit td { padding: 4px 2px !important; font-size: 0.75rem; }
         :fullscreen #view-dashboard .table-custom th, 
         :fullscreen #view-dashboard .table-custom td {
             padding: 4px 8px;
@@ -769,7 +780,7 @@
                             </div>
 
                             <!-- Tabel Matriks -->
-                            <div class="card-custom flex-grow-1 mb-0 d-flex flex-column">
+                            <div class="card-custom mb-0 d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                                     <h6 class="fw-bold mb-0 text-dark">Kontribusi Layanan per Bulan</h6>
                                     <div class="btn-group btn-group-sm" role="group" aria-label="Mode tampilan matriks">
