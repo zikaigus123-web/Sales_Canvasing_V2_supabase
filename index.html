@@ -390,6 +390,21 @@
             color: #1e293b;
         }
 
+
+        /* --- MATRIKS KONTRIBUSI: muat penuh tanpa scroll --- */
+        .matrix-wrap { width: 100%; overflow: visible; }
+        .matrix-fit { table-layout: fixed; width: 100%; font-size: 0.7rem; }
+        .matrix-fit th, .matrix-fit td {
+            padding: 6px 2px !important;
+            font-size: 0.7rem;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+        .matrix-fit th { font-size: 0.64rem; letter-spacing: 0; }
+        .matrix-fit th:first-child, .matrix-fit td:first-child { width: 20%; padding-left: 6px !important; }
+        .matrix-fit th:last-child, .matrix-fit td:last-child { width: 9%; }
+
         /* --- TATA LETAK BARU: FULLSCREEN CSS --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
@@ -513,6 +528,8 @@
             overflow-y: auto;
         }
         
+        :fullscreen #view-dashboard .matrix-fit th,
+        :fullscreen #view-dashboard .matrix-fit td { padding: 4px 2px; }
         :fullscreen #view-dashboard .table-custom th, 
         :fullscreen #view-dashboard .table-custom td {
             padding: 4px 8px;
@@ -760,8 +777,8 @@
                                         <button type="button" id="btnMatrixAmount" class="btn btn-outline-dark fw-bold" onclick="setMatrixMode('amount')"><i class="fas fa-coins me-1"></i>Nilai (Rp)</button>
                                     </div>
                                 </div>
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-bordered text-center align-middle mb-0" id="tblMatriksDashboard">
+                                <div class="matrix-wrap">
+                                    <table class="table table-hover table-bordered text-center align-middle mb-0 matrix-fit" id="tblMatriksDashboard">
                                     </table>
                                 </div>
                             </div>
@@ -1456,10 +1473,10 @@
             n = Math.round(n || 0);
             if (n <= 0) return '-';
             const fmt = (v, d) => v.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: d });
-            if (n >= 1e12) return fmt(n / 1e12, 2) + ' T';
-            if (n >= 1e9)  return fmt(n / 1e9, 2) + ' M';
-            if (n >= 1e6)  return fmt(n / 1e6, 1) + ' Jt';
-            if (n >= 1e3)  return fmt(n / 1e3, 0) + ' Rb';
+            if (n >= 1e12) return fmt(n / 1e12, 2) + 'T';
+            if (n >= 1e9)  return fmt(n / 1e9, 2) + 'M';
+            if (n >= 1e6)  return fmt(n / 1e6, 1) + 'Jt';
+            if (n >= 1e3)  return fmt(n / 1e3, 0) + 'Rb';
             return String(n);
         }
 
