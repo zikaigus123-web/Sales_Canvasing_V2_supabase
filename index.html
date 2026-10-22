@@ -24,6 +24,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+    <!-- Supabase JS client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
@@ -390,32 +393,6 @@
             color: #1e293b;
         }
 
-
-        /* --- MATRIKS KONTRIBUSI: muat penuh tanpa scroll --- */
-        .matrix-wrap { width: 100%; overflow: visible; container-type: inline-size; }
-        .matrix-fit { table-layout: fixed; width: 100%; font-size: 0.7rem; }
-        .matrix-fit th, .matrix-fit td {
-            padding: 6px 2px !important;
-            font-size: 0.7rem;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            line-height: 1.2;
-        }
-        .matrix-fit th { font-size: 0.64rem; letter-spacing: 0; }
-        .matrix-fit th:first-child, .matrix-fit td:first-child { width: 20%; padding-left: 6px !important; }
-        .matrix-fit th:last-child, .matrix-fit td:last-child { width: 9%; }
-
-
-        @container (min-width: 520px) {
-            .matrix-fit th, .matrix-fit td { padding: 10px 3px !important; font-size: 0.8rem; }
-            .matrix-fit th { font-size: 0.72rem; }
-            .matrix-fit th:first-child, .matrix-fit td:first-child { width: 18%; padding-left: 10px !important; }
-        }
-        @container (min-width: 760px) {
-            .matrix-fit th, .matrix-fit td { padding: 12px 4px !important; font-size: 0.9rem; }
-            .matrix-fit th { font-size: 0.8rem; }
-        }
-
         /* --- TATA LETAK BARU: FULLSCREEN CSS --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
@@ -539,8 +516,6 @@
             overflow-y: auto;
         }
         
-        :fullscreen #view-dashboard .matrix-fit th,
-        :fullscreen #view-dashboard .matrix-fit td { padding: 4px 2px !important; font-size: 0.75rem; }
         :fullscreen #view-dashboard .table-custom th, 
         :fullscreen #view-dashboard .table-custom td {
             padding: 4px 8px;
@@ -780,7 +755,7 @@
                             </div>
 
                             <!-- Tabel Matriks -->
-                            <div class="card-custom mb-0 d-flex flex-column">
+                            <div class="card-custom flex-grow-1 mb-0 d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                                     <h6 class="fw-bold mb-0 text-dark">Kontribusi Layanan per Bulan</h6>
                                     <div class="btn-group btn-group-sm" role="group" aria-label="Mode tampilan matriks">
@@ -788,8 +763,8 @@
                                         <button type="button" id="btnMatrixAmount" class="btn btn-outline-dark fw-bold" onclick="setMatrixMode('amount')"><i class="fas fa-coins me-1"></i>Nilai (Rp)</button>
                                     </div>
                                 </div>
-                                <div class="matrix-wrap">
-                                    <table class="table table-hover table-bordered text-center align-middle mb-0 matrix-fit" id="tblMatriksDashboard">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered text-center align-middle mb-0" id="tblMatriksDashboard">
                                     </table>
                                 </div>
                             </div>
@@ -804,7 +779,7 @@
                         <h3 class="mb-0 fw-bold">Database Projek</h3>
                         
                         <div class="d-flex gap-2 flex-wrap">
-                            <button class="btn btn-outline-info fw-bold edit-allowed" onclick="window.open('https://docs.google.com/spreadsheets/d/1kL3DUrkRsi1ItPYqfkFbkBQ6j1cRuNGcclUxbhKNF0g/edit?usp=sharing', '_blank')"><i class="fas fa-external-link-alt me-2"></i>Buka Spreadsheet</button>
+                            <button class="btn btn-outline-info fw-bold edit-allowed" onclick="openSupabaseDashboard()"><i class="fas fa-external-link-alt me-2"></i>Buka Supabase</button>
                             <button class="btn btn-light border fw-bold edit-allowed" onclick="downloadTemplate()"><i class="fas fa-file-excel me-2 text-success"></i>Template</button>
                             
                             <button class="btn btn-outline-secondary edit-allowed fw-bold" onclick="document.getElementById('importExcelInput').click()"><i class="fas fa-upload me-2"></i>Wipe & Import Data</button>
@@ -1079,20 +1054,53 @@
         Chart.register(ChartDataLabels);
 
         // ==========================================
-        // KONFIGURASI DATABASE GOOGLE SHEETS
+        // KONFIGURASI DATABASE SUPABASE
         // ==========================================
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxc45d5UGrH7uffkQdxcAR0v7gtDNM1v0e1qeK5PFVzVrkw9Nm080NtLGYMdkuczRiUzA/exec'; 
+        // >>> ISI DUA NILAI INI dari Supabase Dashboard > Project Settings > API <<<
+        const SUPABASE_URL      = 'https://tqexowapptqszxlfgszz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxZXhvd2FwcHRxc3p4bGZnc3p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NDc2ODMsImV4cCI6MjEwNjEyMzY4M30.-Bfl_ysNmfhCv0vKQnsTLzw_B6Kvdjdwn4EnMSF74lE';   // anon / publishable key (aman dipakai di browser)
+        const LOGIN_EMAIL_DOMAIN = 'salespro.local'; // harus sama dengan di SQL (username -> username@salespro.local)
 
         const DB_KEY_SALES = 'sales_data';
         const DB_KEY_USR   = 'sales_users';
         const DB_KEY_LOG   = 'sales_logs';
 
-        const DB_MAP = {
-            [DB_KEY_USR]:   { sheet: 'Users', key: 'username' },
-            [DB_KEY_SALES]: { sheet: 'Data_Sales', key: 'No. Projek' },
-            [DB_KEY_LOG]:   { sheet: 'Logs', key: 'id' }
-        };
-        
+        let sb = null; // Supabase client (dibuat di initDB)
+
+        // Pemetaan nama kolom aplikasi <-> kolom database (tipe: 'num' = bigint, 'ts' = timestamptz, default = text)
+        const SALES_COLS = [
+            ['Tgl Dibuat', 'tgl_dibuat'], ['Jenis', 'jenis'], ['No. Projek', 'no_projek'],
+            ['Judul Projek', 'judul_projek'], ['Customer', 'customer'], ['Category', 'category'],
+            ['PIC Customer', 'pic_customer'], ['Nilai', 'nilai', 'num'], ['Status', 'status_approval'],
+            ['Tgl Approval', 'tgl_approval'], ['Keterangan', 'keterangan'], ['No. Proposal', 'no_proposal'],
+            ['No. Quotation', 'no_quotation'], ['No. PO/SPK', 'no_po_spk'], ['No. Invoice', 'no_invoice'],
+            ['No. BAST/P', 'no_bast_p'], ['No. LPJ', 'no_lpj'], ['Dibuat/Diteruskan Oleh', 'dibuat_diteruskan_oleh'],
+            ['Lokasi', 'lokasi'], ['amount', 'amount', 'num'], ['MONTH', 'bulan'], ['Cust name', 'cust_name'],
+            ['STATUS', 'status'], ['Aging', 'aging'], ['Aging (days)', 'aging_days'],
+            ['lastUpdatedBy', 'last_updated_by'], ['lastUpdatedAt', 'last_updated_at', 'ts']
+        ];
+
+        function fromDbRow(r) {
+            const out = {};
+            SALES_COLS.forEach(([app, db, type]) => {
+                let v = r[db];
+                if (type === 'num') out[app] = (v === null || v === undefined) ? 0 : v;
+                else out[app] = (v === null || v === undefined) ? '' : v;
+            });
+            return out;
+        }
+
+        function toDbRow(row) {
+            const out = {};
+            SALES_COLS.forEach(([app, db, type]) => {
+                const v = row[app];
+                if (type === 'num') out[db] = parseAmount(v);
+                else if (type === 'ts') out[db] = v ? String(v) : null;
+                else out[db] = (v === undefined || v === null) ? '' : String(v).trim();
+            });
+            return out;
+        }
+
         let localDB = {};
         let currentUser = null;
         let chartInstances = {};
@@ -1185,113 +1193,99 @@
             return true;
         }
 
-        // 2. INISIALISASI DATABASE & CACHING
-        async function initDB() {
+        // 2. INISIALISASI SUPABASE & LOAD DATA
+        function initDB() {
             const loginBtn = document.getElementById('btnLogin');
-            if(loginBtn) {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> MENGHUBUNGKAN KE SERVER...';
-            }
-            
-            try {
-                let res = await fetch(SCRIPT_URL + '?action=getAllData');
-                let result = await res.json();
-                
-                if (result.status === "success") {
-                    localDB[DB_KEY_USR]   = result.data.users || [];
-                    localDB[DB_KEY_SALES] = result.data.sales_data || [];
-                    
-                    let fetchedLogs = result.data.logs || [];
-                    if (!fetchedLogs || fetchedLogs.length === 0) {
-                        let localBackup = localStorage.getItem('sales_backup_logs');
-                        fetchedLogs = localBackup ? JSON.parse(localBackup) : [];
-                    }
-                    localDB[DB_KEY_LOG] = fetchedLogs;
-                    
-                    if(localDB[DB_KEY_USR].length === 0) {
-                        localDB[DB_KEY_USR].push({username: 'admin', password: '123', role: 'admin', active: true});
-                    }
-                    
-                    if(loginBtn) {
-                        loginBtn.disabled = false;
-                        loginBtn.innerHTML = 'MASUK <i class="fas fa-arrow-right ms-2"></i>';
-                    }
-                }
-            } catch (error) {
-                console.error("Gagal memuat data dari Spreadsheet:", error);
-                if(loginBtn) {
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = 'COBA LAGI <i class="fas fa-redo ms-2"></i>';
-                }
-                Swal.fire('Koneksi Gagal', 'Gagal memuat data. Periksa koneksi internet atau status Apps Script (Pastikan sudah dideploy ke publik).', 'error');
-            }
-        }
-
-        function getDB(key) { 
-            return localDB[key] || []; 
-        }
-
-        function saveDB(key, newData) {
-            let oldData = localDB[key] || [];
-            localDB[key] = newData; 
-            
-            if(key === DB_KEY_LOG) {
-                localStorage.setItem('sales_backup_logs', JSON.stringify(newData));
-            }
-
-            if (newData.length === 0 && oldData.length > 0) {
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "deleteAll", sheetName: DB_MAP[key].sheet }) });
+            const notConfigured = !window.supabase || SUPABASE_URL.includes('YOUR-PROJECT') || SUPABASE_ANON_KEY.includes('YOUR-ANON');
+            if (notConfigured) {
+                if (loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = 'KONFIGURASI BELUM LENGKAP'; }
+                Swal.fire('Konfigurasi Belum Lengkap', 'Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian atas script pada index.html.', 'warning');
                 return;
             }
-
-            let keyField = DB_MAP[key].key;
-            let oldKeys = oldData.map(x => String(x[keyField]));
-            let newKeys = newData.map(x => String(x[keyField]));
-            
-            let deletedKeys = oldKeys.filter(k => !newKeys.includes(k));
-            if (deletedKeys.length > 0) {
-                deletedKeys.forEach(dk => {
-                    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "delete", sheetName: DB_MAP[key].sheet, keyField: keyField, keyValue: dk }) });
-                });
-            }
-            
-            if (newData.length > 0) {
-                const chunkSize = 500;
-                for (let i = 0; i < newData.length; i += chunkSize) {
-                    let chunk = newData.slice(i, i + chunkSize);
-                    fetch(SCRIPT_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ 
-                            action: "upsert", 
-                            sheetName: DB_MAP[key].sheet, 
-                            keyField: keyField, 
-                            data: chunk 
-                        }) 
-                    });
-                }
+            sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false }
+            });
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'MASUK <i class="fas fa-arrow-right ms-2"></i>';
             }
         }
 
-        async function saveSalesDBWipeAndReplace(newData) {
-            localDB[DB_KEY_SALES] = newData;
-
-            await fetch(SCRIPT_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: "deleteAll", sheetName: DB_MAP[DB_KEY_SALES].sheet }) 
-            });
-
-            const chunkSize = 500;
-            for (let i = 0; i < newData.length; i += chunkSize) {
-                let chunk = newData.slice(i, i + chunkSize);
-                await fetch(SCRIPT_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: "insertData", 
-                        sheetName: DB_MAP[DB_KEY_SALES].sheet, 
-                        data: chunk 
-                    }) 
-                });
+        function openSupabaseDashboard() {
+            try {
+                const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
+                window.open(`https://supabase.com/dashboard/project/${ref}/editor`, '_blank');
+            } catch (e) {
+                window.open('https://supabase.com/dashboard', '_blank');
             }
+        }
+
+        // Ambil semua baris (melewati batas 1000 baris per request milik Supabase)
+        async function fetchAll(table, columns, orderCol, ascending = true) {
+            const pageSize = 1000;
+            let from = 0;
+            let all = [];
+            while (true) {
+                const { data, error } = await sb.from(table).select(columns)
+                    .order(orderCol, { ascending })
+                    .range(from, from + pageSize - 1);
+                if (error) throw error;
+                all = all.concat(data || []);
+                if (!data || data.length < pageSize) break;
+                from += pageSize;
+            }
+            return all;
+        }
+
+        async function reloadUsers() {
+            const { data, error } = await sb.from('profiles')
+                .select('id, username, role, active')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            localDB[DB_KEY_USR] = data || [];
+        }
+
+        async function loadAllData() {
+            const salesRows = await fetchAll('sales_data', '*', 'id');
+            localDB[DB_KEY_SALES] = salesRows.map(fromDbRow);
+
+            if (currentUser && currentUser.role === 'admin') {
+                await reloadUsers();
+                const { data: logs, error } = await sb.from('activity_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(2000);
+                if (error) throw error;
+                localDB[DB_KEY_LOG] = (logs || []).map(l => ({
+                    id: l.id,
+                    timestamp: l.created_at,
+                    username: l.username,
+                    action: l.action,
+                    detail: l.detail,
+                    extendedDetail: l.extended_detail
+                }));
+            } else {
+                localDB[DB_KEY_USR] = [];
+                localDB[DB_KEY_LOG] = [];
+            }
+        }
+
+        function getDB(key) {
+            return localDB[key] || [];
+        }
+
+        // Wipe & Replace dijalankan atomik di server (satu transaksi) lewat fungsi replace_sales_data
+        async function saveSalesDBWipeAndReplace(newData) {
+            const map = new Map();
+            newData.forEach(r => { map.set(String(r['No. Projek']).trim(), r); });
+            const dupes = newData.length - map.size;
+            const rows = Array.from(map.values()).map(toDbRow);
+
+            const { data, error } = await sb.rpc('replace_sales_data', { p_rows: rows });
+            if (error) throw error;
+
+            localDB[DB_KEY_SALES] = rows.map(fromDbRow);
+            return { count: data, dupes: dupes };
         }
 
         // PENCATAT LOG AKTIVITAS (AUDIT TRAIL)
@@ -1307,7 +1301,18 @@
                 extendedDetail: extendedDetail
             };
             logs.push(logEntry);
-            saveDB(DB_KEY_LOG, logs);
+            localDB[DB_KEY_LOG] = logs;
+
+            if (!sb || !currentUser) return Promise.resolve();
+            // username & waktu diisi ulang oleh server (trigger), jadi tidak bisa dipalsukan
+            return sb.from('activity_logs').insert({
+                id: logEntry.id,
+                action: action,
+                detail: detail,
+                extended_detail: extendedDetail
+            }).then(({ error }) => {
+                if (error) console.warn('Gagal menyimpan log:', error.message);
+            });
         }
 
         function formatLogDate(isoString) {
@@ -1329,41 +1334,86 @@
             }
         }
 
-        function handleLogin(e) {
-            e.preventDefault();
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value;
-            const users = getDB(DB_KEY_USR);
-            
-            const user = users.find(x => {
-                let activeStatus = String(x.active).toUpperCase().trim();
-                let isUserActive = (x.active === true || activeStatus === 'TRUE' || activeStatus === 'ACTIVE');
-                return x.username === u && x.password === p && isUserActive;
-            });
-            
-            if(user) {
-                currentUser = user;
-                document.getElementById('loginScreen').classList.add('d-none');
-                document.getElementById('appContainer').classList.remove('d-none');
-                document.getElementById('displayUserName').innerText = u.toUpperCase();
-                document.getElementById('displayUserInitial').innerText = u.charAt(0).toUpperCase();
-                document.getElementById('displayUserRole').innerText = user.role;
-                
-                Swal.mixin({ customClass: { confirmButton: 'btn btn-primary px-4', cancelButton: 'btn btn-outline-secondary px-4 me-2' }, buttonsStyling: false });
-                
-                applyRolePermissions();
-                switchView('dashboard', document.querySelector('.nav-link-custom'));
-                addLog('Login System', 'User masuk ke dalam sistem', 'Login berhasil melalui portal utama.');
-            } else {
-                Swal.fire({title: 'Akses Ditolak', text: 'Username, password salah, atau akun non-aktif.', icon: 'error', confirmButtonColor: '#1A1A1A' });
-            }
+        function usernameToEmail(u) {
+            return String(u).trim().toLowerCase() + '@' + LOGIN_EMAIL_DOMAIN;
         }
 
-        function logout() {
-            addLog('Logout System', 'User keluar dari sistem', 'Sesi diakhiri oleh user.');
-            setTimeout(() => { 
-                location.reload(); 
-            }, 500);
+        async function handleLogin(e) {
+            e.preventDefault();
+            if (!sb) return;
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> MEMVERIFIKASI...';
+            const resetBtn = () => {
+                btn.disabled = false;
+                btn.innerHTML = 'MASUK <i class="fas fa-arrow-right ms-2"></i>';
+            };
+
+            // 1) Autentikasi + cek profil / status aktif
+            let prof = null;
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email: usernameToEmail(u), password: p });
+                if (error) throw error;
+                const res = await sb.from('profiles').select('id, username, role, active').eq('id', data.user.id).maybeSingle();
+                if (res.error) throw res.error;
+                prof = res.data;
+                if (!prof || !prof.active) {
+                    await sb.auth.signOut();
+                    prof = null;
+                }
+            } catch (err) {
+                console.error(err);
+                resetBtn();
+                const isNetwork = err && /fetch|network/i.test(String(err.message || ''));
+                Swal.fire({
+                    title: isNetwork ? 'Koneksi Gagal' : 'Akses Ditolak',
+                    text: isNetwork ? 'Tidak dapat terhubung ke server. Periksa koneksi internet.' : 'Username, password salah, atau akun non-aktif.',
+                    icon: 'error',
+                    confirmButtonColor: '#1A1A1A'
+                });
+                return;
+            }
+
+            if (!prof) {
+                resetBtn();
+                Swal.fire({title: 'Akses Ditolak', text: 'Username, password salah, atau akun non-aktif.', icon: 'error', confirmButtonColor: '#1A1A1A' });
+                return;
+            }
+
+            // 2) Muat data sesuai hak akses
+            currentUser = prof;
+            try {
+                await loadAllData();
+            } catch (err) {
+                console.error(err);
+                currentUser = null;
+                await sb.auth.signOut();
+                resetBtn();
+                Swal.fire('Gagal Memuat Data', 'Login berhasil tetapi data tidak dapat dimuat. Pastikan file SQL sudah dijalankan di Supabase. Detail: ' + (err.message || err), 'error');
+                return;
+            }
+
+            resetBtn();
+            document.getElementById('loginScreen').classList.add('d-none');
+            document.getElementById('appContainer').classList.remove('d-none');
+            document.getElementById('displayUserName').innerText = prof.username.toUpperCase();
+            document.getElementById('displayUserInitial').innerText = prof.username.charAt(0).toUpperCase();
+            document.getElementById('displayUserRole').innerText = prof.role;
+
+            Swal.mixin({ customClass: { confirmButton: 'btn btn-primary px-4', cancelButton: 'btn btn-outline-secondary px-4 me-2' }, buttonsStyling: false });
+
+            applyRolePermissions();
+            switchView('dashboard', document.querySelector('.nav-link-custom'));
+            addLog('Login System', 'User masuk ke dalam sistem', 'Login berhasil melalui portal utama.');
+        }
+
+        async function logout() {
+            await addLog('Logout System', 'User keluar dari sistem', 'Sesi diakhiri oleh user.');
+            try { await sb.auth.signOut(); } catch (e) {}
+            location.reload();
         }
 
         function applyRolePermissions() {
@@ -1484,10 +1534,10 @@
             n = Math.round(n || 0);
             if (n <= 0) return '-';
             const fmt = (v, d) => v.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: d });
-            if (n >= 1e12) return fmt(n / 1e12, 2) + 'T';
-            if (n >= 1e9)  return fmt(n / 1e9, 2) + 'M';
-            if (n >= 1e6)  return fmt(n / 1e6, 1) + 'Jt';
-            if (n >= 1e3)  return fmt(n / 1e3, 0) + 'Rb';
+            if (n >= 1e12) return fmt(n / 1e12, 2) + ' T';
+            if (n >= 1e9)  return fmt(n / 1e9, 2) + ' M';
+            if (n >= 1e6)  return fmt(n / 1e6, 1) + ' Jt';
+            if (n >= 1e3)  return fmt(n / 1e3, 0) + ' Rb';
             return String(n);
         }
 
@@ -2212,13 +2262,23 @@
                    } 
                }); 
                
-               await saveSalesDBWipeAndReplace(dataDB); 
+               let saveResult;
+               try {
+                   saveResult = await saveSalesDBWipeAndReplace(dataDB);
+               } catch (err) {
+                   console.error(err);
+                   Swal.close();
+                   Swal.fire('Import Gagal', 'Data lama TIDAK diubah. Detail: ' + (err.message || err), 'error');
+                   e.target.value = '';
+                   return;
+               }
+               added = saveResult.count;
                
                addLog('Import Data (Wipe & Replace)', `Menyelaraskan ${added} data (Timpa Semua).`, 'Seluruh database lama diganti penuh dengan data Excel terbaru dengan pembaruan status otomatis.');
                
                renderSalesTable(); 
                Swal.close();
-               Swal.fire('Penyelarasan Selesai', `Sebanyak ${added} data projek berhasil dipulihkan secara penuh tanpa masalah.`, 'success'); 
+               Swal.fire('Penyelarasan Selesai', `Sebanyak ${added} data projek berhasil disimpan.${saveResult.dupes ? ' (' + saveResult.dupes + ' No. Projek ganda digabung, data terakhir yang dipakai.)' : ''}`, 'success'); 
                e.target.value = ''; 
             }; 
             r.readAsBinaryString(file);
@@ -2368,33 +2428,47 @@
             userModalInst.show(); 
         }
         
-        function saveUser() {
-            let users = getDB(DB_KEY_USR); 
-            let u = document.getElementById('usrName').value.trim(); 
-            let p = document.getElementById('usrPass').value; 
+        async function saveUser() {
+            let u = document.getElementById('usrName').value.trim();
+            let p = document.getElementById('usrPass').value;
             let r = document.getElementById('usrRole').value;
-            
-            if(users.find(x => x.username === u)) {
-                return Swal.fire('Error', 'Username sudah terpakai', 'error');
+
+            if (!u || !p) {
+                return Swal.fire('Error', 'Username dan password wajib diisi', 'error');
             }
-            
-            users.push({username: u, password: p, role: r, active: true}); 
-            saveDB(DB_KEY_USR, users); 
-            userModalInst.hide(); 
-            renderUsers(); 
+
+            const { error } = await sb.rpc('admin_create_user', { p_username: u, p_password: p, p_role: r });
+            if (error) {
+                return Swal.fire('Error', error.message, 'error');
+            }
+
+            try { await reloadUsers(); } catch (e) { console.error(e); }
+            userModalInst.hide();
+            renderUsers();
             Swal.fire('Sukses', 'Akun berhasil dibuat', 'success');
-            addLog('Buat Akun', `Admin membuat akun baru: ${u}`);
+            addLog('Buat Akun', `Admin membuat akun baru: ${u.toLowerCase()}`);
         }
-        
-        function toggleUser(idx) {
-            let users = getDB(DB_KEY_USR); 
-            if(users[idx].username === 'admin') {
+
+        async function toggleUser(idx) {
+            let users = getDB(DB_KEY_USR);
+            let target = users[idx];
+            if (!target) return;
+            if (target.username === 'admin') {
                 return Swal.fire('Ditolak', 'Akun Master Admin tidak dapat dimatikan.', 'error');
             }
-            users[idx].active = !users[idx].active; 
-            saveDB(DB_KEY_USR, users); 
+            if (currentUser && target.id === currentUser.id) {
+                return Swal.fire('Ditolak', 'Anda tidak dapat menonaktifkan akun Anda sendiri.', 'error');
+            }
+
+            const newState = !target.active;
+            const { error } = await sb.from('profiles').update({ active: newState }).eq('id', target.id);
+            if (error) {
+                return Swal.fire('Error', error.message, 'error');
+            }
+
+            target.active = newState;
             renderUsers();
-            addLog('Update Akun', `Status akun ${users[idx].username} diubah menjadi ${users[idx].active}`);
+            addLog('Update Akun', `Status akun ${target.username} diubah menjadi ${target.active}`);
         }
 
         // Jalankan fetch awal secara langsung 
