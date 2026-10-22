@@ -521,6 +521,86 @@
             padding: 4px 8px;
             font-size: 0.75rem;
         }
+    
+        /* =====================================================
+           MOTION & TRANSITIONS
+           ===================================================== */
+        :root {
+            --ease-out: cubic-bezier(.2, .8, .2, 1);
+            --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        /* Login <-> aplikasi */
+        .login-wrapper { transition: opacity .38s ease, transform .38s var(--ease-out); }
+        .login-wrapper.leaving { opacity: 0; transform: scale(1.03); pointer-events: none; }
+        #appContainer.app-enter { animation: appEnter .65s var(--ease-out) backwards; }
+        #appContainer.app-leave { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; pointer-events: none; }
+        @keyframes appEnter { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+        .login-card.shake { animation: loginShake .5s cubic-bezier(.36, .07, .19, .97) both; }
+        @keyframes loginShake {
+            10%, 90% { transform: translateX(-2px); }
+            20%, 80% { transform: translateX(4px); }
+            30%, 50%, 70% { transform: translateX(-7px); }
+            40%, 60% { transform: translateX(7px); }
+        }
+
+        /* Data berubah (filter, toggle matriks, dll) */
+        .soft-refresh { animation: softRefresh .45s var(--ease-out) both; }
+        @keyframes softRefresh { from { opacity: .25; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .kpi-bump { animation: kpiBump .55s var(--ease-spring); }
+        @keyframes kpiBump { 0% { transform: scale(1); } 35% { transform: scale(1.07); } 100% { transform: scale(1); } }
+        .fs-kpi-row .card-custom:hover { transform: translateY(-3px); }
+
+        /* Tombol */
+        .btn { transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .15s var(--ease-out); }
+        .btn:active:not(:disabled) { transform: scale(.97); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 14px rgba(255, 192, 0, .35); transform: translateY(-1px); }
+
+        /* Modal Bootstrap */
+        .modal.fade .modal-dialog { transform: translateY(24px) scale(.95); opacity: 0; transition: transform .38s var(--ease-spring), opacity .28s ease; }
+        .modal.show .modal-dialog { transform: none; opacity: 1; }
+        .modal-backdrop { transition: opacity .3s ease !important; }
+
+        /* Popup SweetAlert (respon sistem) */
+        @keyframes swalPopIn {
+            0% { opacity: 0; transform: translateY(22px) scale(.9); }
+            65% { opacity: 1; transform: translateY(-4px) scale(1.02); }
+            100% { opacity: 1; transform: none; }
+        }
+        @keyframes swalPopOut { to { opacity: 0; transform: translateY(12px) scale(.94); } }
+        .swal2-popup.swal-anim-in { animation: swalPopIn .45s var(--ease-out) both; }
+        .swal2-popup.swal-anim-out { animation: swalPopOut .22s ease-in both; }
+        .swal2-container { transition: background-color .3s ease, backdrop-filter .3s ease; }
+        .swal2-container.swal2-backdrop-show { backdrop-filter: blur(4px); }
+
+        /* Pin peta */
+        .leaflet-interactive.map-pin {
+            animation: pinIn .55s var(--ease-spring) backwards;
+            transform-box: fill-box;
+            transform-origin: center;
+            transition: transform .18s var(--ease-out), stroke-width .18s ease, fill-opacity .18s ease;
+            cursor: pointer;
+        }
+        .leaflet-interactive.map-pin:hover { transform: scale(1.35); stroke-width: 3px; fill-opacity: 1; }
+        @keyframes pinIn { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+
+        /* Popup detail lokasi */
+        .loc-header { background: var(--sidebar-bg); color: #fff; border-bottom: 4px solid var(--brand-color); padding: 1.1rem 1.5rem; }
+        .loc-pin { width: 44px; height: 44px; background: var(--brand-color); color: #1A1A1A; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+        .loc-kpi { background: #fff; border: 1px solid var(--border-color); border-bottom-width: 4px; border-radius: 1rem; padding: 1.1rem .75rem; text-align: center; height: 100%; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .02); }
+        .loc-stagger > * { animation: riseIn .55s var(--ease-out) both; }
+        .loc-stagger > *:nth-child(1) { animation-delay: .05s; }
+        .loc-stagger > *:nth-child(2) { animation-delay: .12s; }
+        .loc-stagger > *:nth-child(3) { animation-delay: .19s; }
+        .loc-stagger > *:nth-child(4) { animation-delay: .26s; }
+        .loc-row { animation: riseIn .45s var(--ease-out) both; }
+        @keyframes riseIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+        .status-chip { display: inline-flex; align-items: center; gap: .45rem; padding: .35rem .8rem; border-radius: 999px; background: #F8FAFC; border: 1px solid var(--border-color); font-size: .78rem; font-weight: 700; color: var(--text-main); }
+        .status-chip .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
+        }
     </style>
 </head>
 <body>
@@ -932,6 +1012,81 @@
 
     <!-- MODALS SECTION -->
     
+    <!-- Modal Detail Lokasi (klik pin peta) -->
+    <div class="modal fade" id="modalLocation" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 1.25rem; border: none; overflow: hidden;">
+                <div class="loc-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="loc-pin"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0" id="locTitle">Lokasi</h5>
+                            <div class="small" style="color: #A0AEC0;" id="locSubtitle"></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" style="background: var(--primary-bg);">
+                    <div class="row g-3 mb-3 loc-stagger">
+                        <div class="col-6 col-lg-3">
+                            <div class="loc-kpi d-flex flex-column justify-content-center" style="border-bottom-color: #0dcaf0;">
+                                <div class="kpi-title" id="locTitlePotential">TOTAL POTENTIAL AMOUNT PROJECT</div>
+                                <div class="kpi-value text-info" id="locKpiPotential">Rp 0</div>
+                                <div class="small mt-2" style="height: 18px;"></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="loc-kpi d-flex flex-column justify-content-center" style="border-bottom-color: #ffc107;">
+                                <div class="kpi-title" id="locTitleDeal">TOTAL PROJECT AMOUNT (DEAL)</div>
+                                <div class="kpi-value text-success" id="locKpiDeal">Rp 0</div>
+                                <div class="small text-muted mt-2 fw-bold" style="min-height: 18px;"><i class="fas fa-bullseye text-primary me-1"></i> <span id="locDealPct">0</span>% dari Potential</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="loc-kpi d-flex flex-column justify-content-center" style="border-bottom-color: #212529;">
+                                <div class="kpi-title">TOTAL PROJEK</div>
+                                <div class="kpi-value" id="locKpiTotal">0</div>
+                                <div class="small mt-2" style="height: 18px;"></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="loc-kpi d-flex flex-column justify-content-center" style="border-bottom-color: #6c757d;">
+                                <div class="kpi-title" id="locTitlePending">PROJEK TERTUNDA (ON PROGRESS)</div>
+                                <div class="kpi-value text-danger" id="locKpiPending">0</div>
+                                <div class="small mt-2" style="height: 18px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-custom mb-3 d-flex flex-wrap align-items-center gap-2 py-3" id="locStatusChips"></div>
+
+                    <div class="card-custom mb-0">
+                        <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-clock-rotate-left text-primary me-2"></i>Transaksi Terbaru</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom align-middle mb-0" id="tblLocLatest">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>No. Projek</th>
+                                        <th>Judul Projek</th>
+                                        <th>Customer</th>
+                                        <th class="text-end">Amount</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="small text-muted mt-3" id="locLatestNote"></div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal List Cancel -->
     <div class="modal fade" id="modalCancelList" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1052,6 +1207,58 @@
 
     <script>
         Chart.register(ChartDataLabels);
+
+        // ==========================================
+        // MOTION HELPERS (transisi & animasi)
+        // ==========================================
+        // Semua popup SweetAlert (respon sistem) memakai animasi masuk/keluar yang halus
+        window.Swal = Swal.mixin({
+            showClass: { popup: 'swal-anim-in', backdrop: 'swal2-backdrop-show' },
+            hideClass: { popup: 'swal-anim-out', backdrop: 'swal2-backdrop-hide' }
+        });
+
+        function prefersReducedMotion() {
+            return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        }
+
+        // Angka KPI "menghitung naik" dari nilai sebelumnya ke nilai baru
+        function animateNumber(el, to, fmt, duration = 800) {
+            if (!el) return;
+            const from = parseFloat(el.dataset.value || 0) || 0;
+            el.dataset.value = to;
+            if (el._raf) { cancelAnimationFrame(el._raf); el._raf = null; }
+            if (prefersReducedMotion() || from === to) { el.innerText = fmt(to); return; }
+
+            el.classList.remove('kpi-bump');
+            void el.offsetWidth;
+            el.classList.add('kpi-bump');
+
+            const start = performance.now();
+            const ease = x => 1 - Math.pow(1 - x, 3);
+            const step = now => {
+                const p = Math.min((now - start) / duration, 1);
+                el.innerText = fmt(Math.round(from + (to - from) * ease(p)));
+                if (p < 1) { el._raf = requestAnimationFrame(step); } else { el._raf = null; el.innerText = fmt(to); }
+            };
+            el._raf = requestAnimationFrame(step);
+        }
+
+        // Memutar ulang animasi "segar" pada elemen yang isinya baru diganti
+        function softRefresh(el) {
+            if (!el) return;
+            el.classList.remove('soft-refresh');
+            void el.offsetWidth;
+            el.classList.add('soft-refresh');
+        }
+
+        function shakeLoginCard() {
+            const card = document.querySelector('.login-card');
+            if (!card) return;
+            card.classList.remove('shake');
+            void card.offsetWidth;
+            card.classList.add('shake');
+            card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
+        }
 
         // ==========================================
         // KONFIGURASI DATABASE SUPABASE
@@ -1367,6 +1574,7 @@
             } catch (err) {
                 console.error(err);
                 resetBtn();
+                shakeLoginCard();
                 const isNetwork = err && /fetch|network/i.test(String(err.message || ''));
                 Swal.fire({
                     title: isNetwork ? 'Koneksi Gagal' : 'Akses Ditolak',
@@ -1379,6 +1587,7 @@
 
             if (!prof) {
                 resetBtn();
+                shakeLoginCard();
                 Swal.fire({title: 'Akses Ditolak', text: 'Username, password salah, atau akun non-aktif.', icon: 'error', confirmButtonColor: '#1A1A1A' });
                 return;
             }
@@ -1397,23 +1606,32 @@
             }
 
             resetBtn();
-            document.getElementById('loginScreen').classList.add('d-none');
-            document.getElementById('appContainer').classList.remove('d-none');
+            const loginEl = document.getElementById('loginScreen');
+            const appEl = document.getElementById('appContainer');
             document.getElementById('displayUserName').innerText = prof.username.toUpperCase();
             document.getElementById('displayUserInitial').innerText = prof.username.charAt(0).toUpperCase();
             document.getElementById('displayUserRole').innerText = prof.role;
 
-            Swal.mixin({ customClass: { confirmButton: 'btn btn-primary px-4', cancelButton: 'btn btn-outline-secondary px-4 me-2' }, buttonsStyling: false });
-
-            applyRolePermissions();
-            switchView('dashboard', document.querySelector('.nav-link-custom'));
-            addLog('Login System', 'User masuk ke dalam sistem', 'Login berhasil melalui portal utama.');
+            // Transisi halus: tombol berubah "BERHASIL", layar login memudar, aplikasi masuk
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-check me-2"></i> BERHASIL';
+            loginEl.classList.add('leaving');
+            setTimeout(() => {
+                loginEl.classList.add('d-none');
+                loginEl.classList.remove('leaving');
+                appEl.classList.remove('d-none');
+                appEl.classList.add('app-enter');
+                applyRolePermissions();
+                switchView('dashboard', document.querySelector('.nav-link-custom'));
+                addLog('Login System', 'User masuk ke dalam sistem', 'Login berhasil melalui portal utama.');
+            }, 380);
         }
 
         async function logout() {
             await addLog('Logout System', 'User keluar dari sistem', 'Sesi diakhiri oleh user.');
             try { await sb.auth.signOut(); } catch (e) {}
-            location.reload();
+            document.getElementById('appContainer').classList.add('app-leave');
+            setTimeout(() => location.reload(), 380);
         }
 
         function applyRolePermissions() {
@@ -1568,6 +1786,7 @@
                 html += `<td class="fw-bold bg-light text-dark"${tip(rowTotal)}>${isAmt ? formatShortRp(rowTotal) : rowTotal}</td></tr>`;
             }
             document.getElementById('tblMatriksDashboard').innerHTML = html + `</tbody>`;
+            softRefresh(document.getElementById('tblMatriksDashboard').parentElement);
         }
 
         function renderDashboard() {
@@ -1657,7 +1876,7 @@
                     monthsSet.add(bulan);
                     
                     if(lokasiRaw !== '') {
-                        let cleanName = lokasiRaw.toLowerCase().replace(/kabupaten|kab\.|kota/gi, '').trim();
+                        let cleanName = cleanLokasiKey(lokasiRaw);
                         cityCountsMap[cleanName] = (cityCountsMap[cleanName] || 0) + 1;
                         cityRealNamesMap[cleanName] = lokasiRaw;
                     }
@@ -1670,11 +1889,11 @@
             document.getElementById('kpiTitleTotalAmount').innerText = dashFilterStatus === 'ALL' ? 'TOTAL POTENTIAL AMOUNT PROJECT' : `TOTAL POTENTIAL AMOUNT PROJECT (${dashFilterStatus})`;
             document.getElementById('kpiTitlePending').innerText = dashFilterStatus === 'ALL' ? 'PROJEK TERTUNDA (ON PROGRESS)' : `PROJEK (${dashFilterStatus})`;
             
-            document.getElementById('kpiRevenue').innerText = formatRp(totalRev);
-            document.getElementById('kpiTotalAmount').innerText = formatRp(totalAmountFiltered);
+            animateNumber(document.getElementById('kpiRevenue'), totalRev, formatRp);
+            animateNumber(document.getElementById('kpiTotalAmount'), totalAmountFiltered, formatRp);
             
-            document.getElementById('kpiTotalDeal').innerText = countFiltered;
-            document.getElementById('kpiTotalPending').innerText = dashFilterStatus === 'ALL' ? countInProgressOverall : countFiltered;
+            animateNumber(document.getElementById('kpiTotalDeal'), countFiltered, String);
+            animateNumber(document.getElementById('kpiTotalPending'), dashFilterStatus === 'ALL' ? countInProgressOverall : countFiltered, String);
             
             let dealPct = totalAmountFiltered === 0 ? "0" : ((totalRev / totalAmountFiltered) * 100).toFixed(1);
             document.getElementById('kpiDealPercent').innerHTML = `<i class="fas fa-bullseye text-primary me-1"></i> ${dealPct}% dari Potential Amount`;
@@ -1947,6 +2166,7 @@
             });
 
             initAndPlotMap(cityCountsMap, cityRealNamesMap);
+            softRefresh(document.getElementById('dashStory'));
         }
 
         let cancelListModalInst;
@@ -2036,6 +2256,136 @@
             }, 300);
         }
 
+        // ---------- Detail lokasi (klik pin peta) ----------
+        function escapeHtml(s) {
+            return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function normalizeStatus(v) {
+            let s = String(v || '').toUpperCase().trim();
+            return s === 'PENDING' ? 'ON PROGRESS' : s;
+        }
+
+        function cleanLokasiKey(raw) {
+            return String(raw || '').trim().toLowerCase().replace(/kabupaten|kab\.|kota/gi, '').trim();
+        }
+
+        function parseRowTime(v) {
+            if (!v || v === '-') return 0;
+            let s = String(v).trim();
+            let d = new Date(s);
+            if (isNaN(d.getTime())) {
+                const p = s.split(/[-/ T]/);
+                if (p.length >= 3 && p[0].length === 2) d = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+            }
+            return isNaN(d.getTime()) ? 0 : d.getTime();
+        }
+
+        function formatTglShort(v) {
+            const ts = parseRowTime(v);
+            if (!ts) return v ? escapeHtml(v) : '-';
+            return new Date(ts).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        // Baris projek yang lolos filter dashboard yang sedang aktif (status + bulan / rentang tanggal)
+        function getDashboardFilteredRows() {
+            const fStatus = document.getElementById('dashFilterStatus').value;
+            const fBulan = document.getElementById('dashFilterBulan').value;
+            const fStart = document.getElementById('dashStartDate').value;
+            const fEnd = document.getElementById('dashEndDate').value;
+
+            return getDB(DB_KEY_SALES).filter(row => {
+                const status = normalizeStatus(row['STATUS']);
+                const bulan = String(row['MONTH'] || '-').toUpperCase().trim();
+                let passBulan = true;
+                if ((fStart && fEnd) || fBulan === 'YTD') {
+                    passBulan = checkDateFilter(row['Tgl Dibuat'], fStart, fEnd, fBulan);
+                } else if (fBulan !== 'ALL') {
+                    passBulan = (bulan === fBulan);
+                }
+                const passStatus = (fStatus === 'ALL' || status === fStatus);
+                return passBulan && passStatus;
+            });
+        }
+
+        let locModalInst;
+
+        function openLocationModal(cleanKey, displayName) {
+            const fStatus = document.getElementById('dashFilterStatus').value;
+            const fBulan = document.getElementById('dashFilterBulan').value;
+            const fStart = document.getElementById('dashStartDate').value;
+            const fEnd = document.getElementById('dashEndDate').value;
+
+            const rows = getDashboardFilteredRows().filter(r => cleanLokasiKey(r['Lokasi']) === cleanKey);
+
+            let potential = 0, dealSum = 0, onProg = 0;
+            const counts = { 'DEAL': 0, 'ON PROGRESS': 0, 'NEW': 0, 'NO DEAL': 0 };
+            rows.forEach(r => {
+                const st = normalizeStatus(r['STATUS']);
+                const amt = parseAmount(r['amount'] || r['Nilai']);
+                potential += amt;
+                if (st === 'DEAL') dealSum += amt;
+                if (st === 'ON PROGRESS') onProg++;
+                if (counts[st] !== undefined) counts[st]++;
+            });
+
+            // Aturan yang sama dengan kartu KPI di dashboard
+            const kpiDeal = fStatus === 'ALL' ? dealSum : potential;
+            const kpiPending = fStatus === 'ALL' ? onProg : rows.length;
+            const dealPct = potential === 0 ? '0' : ((kpiDeal / potential) * 100).toFixed(1);
+
+            document.getElementById('locTitle').innerText = displayName;
+            const statusLabel = fStatus === 'ALL' ? 'Semua status' : fStatus;
+            const periodLabel = (fStart && fEnd) ? `${fStart} s/d ${fEnd}` : (fBulan === 'ALL' ? 'Semua bulan' : (fBulan === 'YTD' ? 'Year to Date' : 'Bulan ' + fBulan));
+            document.getElementById('locSubtitle').innerText = `${rows.length} projek terdaftar · ${statusLabel} · ${periodLabel}`;
+
+            document.getElementById('locTitlePotential').innerText = fStatus === 'ALL' ? 'TOTAL POTENTIAL AMOUNT PROJECT' : `TOTAL POTENTIAL AMOUNT PROJECT (${fStatus})`;
+            document.getElementById('locTitleDeal').innerText = fStatus === 'ALL' ? 'TOTAL PROJECT AMOUNT (DEAL)' : `TOTAL PROJECT AMOUNT (${fStatus})`;
+            document.getElementById('locTitlePending').innerText = fStatus === 'ALL' ? 'PROJEK TERTUNDA (ON PROGRESS)' : `PROJEK (${fStatus})`;
+            document.getElementById('locDealPct').innerText = dealPct;
+
+            // Angka mulai dari 0 lalu menghitung naik setelah popup terbuka
+            const kpiEls = [
+                [document.getElementById('locKpiPotential'), potential, formatRp],
+                [document.getElementById('locKpiDeal'), kpiDeal, formatRp],
+                [document.getElementById('locKpiTotal'), rows.length, String],
+                [document.getElementById('locKpiPending'), kpiPending, String]
+            ];
+            kpiEls.forEach(([el, , fmt]) => { el.dataset.value = 0; el.innerText = fmt(0); });
+            setTimeout(() => kpiEls.forEach(([el, val, fmt]) => animateNumber(el, val, fmt, 900)), 280);
+
+            const chipDefs = [['DEAL', '#22c55e'], ['ON PROGRESS', '#718096'], ['NEW', '#14b8a6'], ['NO DEAL', '#ef4444']];
+            document.getElementById('locStatusChips').innerHTML =
+                '<span class="kpi-title me-2">Rincian Status</span>' +
+                chipDefs.map(([k, c]) => `<span class="status-chip"><span class="dot" style="background:${c}"></span>${k}<span class="ms-1 text-dark">${counts[k]}</span></span>`).join('');
+
+            const latest = rows.slice()
+                .sort((a, b) => (parseRowTime(b['Tgl Dibuat']) - parseRowTime(a['Tgl Dibuat'])) || String(b['No. Projek']).localeCompare(String(a['No. Projek'])))
+                .slice(0, 5);
+
+            let html = '';
+            latest.forEach((r, i) => {
+                const st = normalizeStatus(r['STATUS']);
+                const badge = st === 'DEAL' ? 'bg-success' : st === 'NO DEAL' ? 'bg-danger' : st === 'NEW' ? 'bg-info text-dark' : 'bg-warning text-dark';
+                const judul = r['Judul Projek'] || '-';
+                html += `<tr class="loc-row" style="animation-delay:${350 + i * 80}ms">
+                    <td class="text-nowrap">${formatTglShort(r['Tgl Dibuat'])}</td>
+                    <td><strong>${escapeHtml(r['No. Projek'])}</strong></td>
+                    <td class="fw-medium text-truncate" style="max-width:260px;" title="${escapeHtml(judul)}">${escapeHtml(judul)}</td>
+                    <td>${escapeHtml(r['Cust name'] || r['Customer'] || '-')}</td>
+                    <td class="text-end fw-bold text-nowrap">${formatRp(parseAmount(r['amount'] || r['Nilai']))}</td>
+                    <td class="text-center"><span class="badge ${badge}">${escapeHtml(st)}</span></td>
+                </tr>`;
+            });
+            document.querySelector('#tblLocLatest tbody').innerHTML = html || '<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada transaksi.</td></tr>';
+            document.getElementById('locLatestNote').innerText = rows.length
+                ? `Menampilkan ${latest.length} dari ${rows.length} projek terbaru di lokasi ini (diurutkan dari Tgl Dibuat). Angka mengikuti filter dashboard yang sedang aktif.`
+                : '';
+
+            if (!locModalInst) locModalInst = new bootstrap.Modal(document.getElementById('modalLocation'));
+            locModalInst.show();
+        }
+
         function initAndPlotMap(cityCounts, cityRealNames) {
             if(mapInstance !== null) { 
                 mapInstance.remove(); 
@@ -2063,23 +2413,29 @@
                 }
             });
 
+            let pinIndex = 0;
             for (let cleanKota in cityCounts) {
                 let coords = getMapCoordinates(cleanKota);
                 if (coords) {
-                    let count = cityCounts[cleanKota];
-                    let displayNama = cityRealNames[cleanKota];
-                    
-                    let radiusSize = 10; 
-                    
-                    L.circleMarker(coords, {
-                        radius: radiusSize,
+                    const count = cityCounts[cleanKota];
+                    const displayNama = cityRealNames[cleanKota];
+
+                    const marker = L.circleMarker(coords, {
+                        radius: 10,
                         fillColor: "#facc15",
                         color: "#0f172a",
                         weight: 2,
                         opacity: 1,
-                        fillOpacity: 0.95
-                    }).bindPopup(`<div style="text-align:center;"><b>${displayNama}</b><br><span style="font-size:1.1rem;font-weight:bold;">${count}</span> Projek Terdaftar</div>`)
-                      .addTo(mapInstance);
+                        fillOpacity: 0.95,
+                        className: 'map-pin'
+                    }).addTo(mapInstance);
+
+                    marker.bindTooltip(`<b>${escapeHtml(displayNama)}</b><br>${count} projek &middot; klik untuk detail`, { direction: 'top', offset: [0, -8] });
+                    marker.on('click', () => openLocationModal(cleanKota, displayNama));
+
+                    const pinEl = marker.getElement();
+                    if (pinEl) pinEl.style.animationDelay = (pinIndex * 45) + 'ms';
+                    pinIndex++;
                 }
             }
             
