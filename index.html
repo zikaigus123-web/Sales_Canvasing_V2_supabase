@@ -510,6 +510,19 @@
             border-radius: 6px;
         }
         
+        /* Kolom "Jenis Projek" di matriks dibekukan saat scroll horizontal */
+        #tblMatriksDashboard { border-collapse: separate; border-spacing: 0; }
+        #tblMatriksDashboard th:first-child,
+        #tblMatriksDashboard td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            min-width: 130px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.12);
+        }
+        #tblMatriksDashboard thead th:first-child { background-color: #212529; color: #fff; z-index: 3; }
+        #tblMatriksDashboard tbody td:first-child { background-color: #fff; }
+
         :fullscreen #view-dashboard .table-responsive {
             flex: 1 1 0 !important;
             min-height: 0 !important;
