@@ -510,6 +510,26 @@
             border-radius: 6px;
         }
         
+
+        /* ===== FULLSCREEN: perbaikan layout (kartu Aging + tinggi minimum + lebar kolom) ===== */
+        :fullscreen #view-dashboard { overflow-x: hidden !important; }
+        :fullscreen #view-dashboard .col-left,
+        :fullscreen #view-dashboard .col-right { min-width: 0 !important; }
+        :fullscreen #view-dashboard .fs-chart-row { min-height: 230px !important; }
+        :fullscreen #view-dashboard .fs-map-card { min-height: 280px !important; margin-top: 0 !important; }
+        :fullscreen #view-dashboard #cardAging {
+            flex: 0 0 auto !important;
+            height: auto !important;
+            margin-top: 0 !important;
+            padding: 10px 15px !important;
+        }
+        :fullscreen #view-dashboard #cardAging .loc-kpi { padding: .5rem .5rem; border-bottom-width: 3px; }
+        :fullscreen #view-dashboard #cardAging .loc-kpi .kpi-value { font-size: 1.3rem; }
+        :fullscreen #view-dashboard .fs-chart-row .card-custom,
+        :fullscreen #view-dashboard .fs-map-card { overflow: hidden; }
+        .aging-tile { transition: box-shadow .2s ease; }
+        .aging-tile:hover { box-shadow: 0 8px 16px rgba(0,0,0,.10); }
+
         /* Kolom "Jenis Projek" di matriks dibekukan saat scroll horizontal */
         #tblMatriksDashboard { border-collapse: separate; border-spacing: 0; }
         #tblMatriksDashboard th:first-child,
@@ -545,10 +565,10 @@
 
         /* Login <-> aplikasi */
         .login-wrapper { transition: opacity .38s ease, transform .38s var(--ease-out); }
-        .login-wrapper.leaving { opacity: 0; transform: scale(1.03); pointer-events: none; }
-        #appContainer.app-enter { animation: appEnter .65s var(--ease-out) backwards; }
-        #appContainer.app-leave { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; pointer-events: none; }
-        @keyframes appEnter { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+        .login-wrapper.leaving { opacity: 0; pointer-events: none; }
+        #appContainer.app-enter { animation: appEnter .5s ease backwards; }
+        #appContainer.app-leave { opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+        @keyframes appEnter { from { opacity: 0; } to { opacity: 1; } }
         .login-card.shake { animation: loginShake .5s cubic-bezier(.36, .07, .19, .97) both; }
         @keyframes loginShake {
             10%, 90% { transform: translateX(-2px); }
@@ -567,7 +587,7 @@
         /* Tombol */
         .btn { transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .15s var(--ease-out); }
         .btn:active:not(:disabled) { transform: scale(.97); }
-        .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 14px rgba(255, 192, 0, .35); transform: translateY(-1px); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 14px rgba(255, 192, 0, .35); }
 
         /* Modal Bootstrap */
         .modal.fade .modal-dialog { transform: translateY(24px) scale(.95); opacity: 0; transition: transform .38s var(--ease-spring), opacity .28s ease; }
@@ -1686,6 +1706,7 @@
                 loginEl.classList.remove('leaving');
                 appEl.classList.remove('d-none');
                 appEl.classList.add('app-enter');
+                setTimeout(() => appEl.classList.remove('app-enter'), 700); // lepas class animasi agar tidak ada sisa efek
                 applyRolePermissions();
                 switchView('dashboard', document.querySelector('.nav-link-custom'));
                 addLog('Login System', 'User masuk ke dalam sistem', 'Login berhasil melalui portal utama.');
