@@ -527,6 +527,8 @@
         :fullscreen #view-dashboard #cardAging .loc-kpi .kpi-value { font-size: 1.3rem; }
         :fullscreen #view-dashboard .fs-chart-row .card-custom,
         :fullscreen #view-dashboard .fs-map-card { overflow: hidden; }
+        .kpi-clickable { cursor: pointer; }
+        .kpi-clickable:hover { box-shadow: 0 10px 18px rgba(0,0,0,.12) !important; }
         .aging-tile { transition: box-shadow .2s ease; }
         .aging-tile:hover { box-shadow: 0 8px 16px rgba(0,0,0,.10); }
 
@@ -783,28 +785,28 @@
                             <!-- 4 KPI Cards -->
                             <div class="row g-3 fs-kpi-row">
                                 <div class="col-md-3">
-                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-info">
+                                    <div class="card-custom kpi-clickable text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-info" role="button" tabindex="0" title="Klik untuk melihat daftar projek" onclick="openKpiModal('potential')" onkeydown="if(event.key==='Enter')openKpiModal('potential')">
                                         <div class="kpi-title" id="kpiTitleTotalAmount">TOTAL POTENTIAL AMOUNT PROJECT</div>
                                         <div class="kpi-value text-info" id="kpiTotalAmount">Rp 0</div>
                                         <div class="small text-muted mt-2 fw-bold" style="height: 18px;"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-warning">
+                                    <div class="card-custom kpi-clickable text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-warning" role="button" tabindex="0" title="Klik untuk melihat daftar projek" onclick="openKpiModal('revenue')" onkeydown="if(event.key==='Enter')openKpiModal('revenue')">
                                         <div class="kpi-title" id="kpiTitleRev">TOTAL PROJECT AMOUNT (DEAL)</div>
                                         <div class="kpi-value text-success" id="kpiRevenue">Rp 0</div>
                                         <div class="small text-muted mt-2 fw-bold" id="kpiDealPercent"><i class="fas fa-bullseye text-primary me-1"></i> 0% dari Potential</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-dark">
+                                    <div class="card-custom kpi-clickable text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-dark" role="button" tabindex="0" title="Klik untuk melihat daftar projek" onclick="openKpiModal('total')" onkeydown="if(event.key==='Enter')openKpiModal('total')">
                                         <div class="kpi-title">TOTAL PROJEK</div>
                                         <div class="kpi-value" id="kpiTotalDeal">0</div>
                                         <div class="small text-muted mt-2 fw-bold"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="card-custom text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-secondary">
+                                    <div class="card-custom kpi-clickable text-center h-100 mb-0 d-flex flex-column justify-content-center py-4 border-bottom border-4 border-secondary" role="button" tabindex="0" title="Klik untuk melihat daftar projek" onclick="openKpiModal('pending')" onkeydown="if(event.key==='Enter')openKpiModal('pending')">
                                         <div class="kpi-title" id="kpiTitlePending">PROJEK ON PROGRESS</div>
                                         <div class="kpi-value text-danger" id="kpiTotalPending">0</div>
                                         <div class="small text-muted mt-2 fw-bold"></div>
@@ -1055,6 +1057,54 @@
 
     <!-- MODALS SECTION -->
     
+    <!-- Modal Daftar Projek (klik score card) -->
+    <div class="modal fade" id="modalKpi" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 1.25rem; border: none; overflow: hidden;">
+                <div class="loc-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="loc-pin"><i class="fas fa-list-check"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0" id="kpiModalTitle">Daftar Projek</h5>
+                            <div class="small" style="color: #A0AEC0;" id="kpiModalSub"></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" style="background: var(--primary-bg);">
+                    <div class="card-custom mb-0">
+                        <div class="input-group mb-3 shadow-sm rounded">
+                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="kpiModalSearch" class="form-control border-start-0 ps-0" placeholder="Cari No. Projek, Judul, atau Klien..." oninput="onKpiSearch()">
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom align-middle mb-0" id="tblKpiList">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>No. Projek</th>
+                                        <th>Judul &amp; Jenis</th>
+                                        <th>Customer</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                            <div class="small text-muted" id="kpiModalNote"></div>
+                            <button type="button" class="btn btn-sm btn-outline-dark fw-bold d-none" id="kpiModalMore" onclick="showMoreKpi()">Tampilkan lebih banyak</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Aging Projek -->
     <div class="modal fade" id="modalAging" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -1901,6 +1951,9 @@
             let cityCountsMap = {}; 
             let cityRealNamesMap = {}; 
 
+            getSalesIndex();
+            const kpiTmp = { potential: [], revenue: [], total: [], progressAll: [] };
+
             data.forEach(row => {
                 let status = String(row['STATUS'] || '').toUpperCase().trim();
                 if(status === 'PENDING') status = 'ON PROGRESS'; 
@@ -1926,6 +1979,7 @@
                 if(isPassedBulan) {
                     if(statusCounts[status] !== undefined) statusCounts[status]++;
                     if (status === 'ON PROGRESS') countInProgressOverall++;
+                    if (status === 'ON PROGRESS' && salesMetaMap.get(row)) kpiTmp.progressAll.push(salesMetaMap.get(row));
                     
                     if (status === 'CANCEL' || status === 'NO DEAL') {
                         let keteranganRaw = row['Keterangan'] || row['keterangan'] || '';
@@ -1938,13 +1992,17 @@
                 if (isPassedStatus && isPassedBulan) {
                     countFiltered++; 
                     totalAmountFiltered += amt;
+                    const _meta = salesMetaMap.get(row);
+                    if (_meta) { kpiTmp.potential.push(_meta); kpiTmp.total.push(_meta); }
                     
                     if (dashFilterStatus === 'ALL') {
                         if (status === 'DEAL') { 
                             totalRev += amt; 
+                            if (_meta) kpiTmp.revenue.push(_meta);
                         }
                     } else {
                         totalRev += amt;
+                        if (_meta) kpiTmp.revenue.push(_meta);
                     }
                     
                     if(!clients[clientName]) clients[clientName] = 0; 
@@ -1970,6 +2028,13 @@
                     }
                 }
             });
+
+            kpiData = {
+                potential: kpiTmp.potential,
+                revenue: kpiTmp.revenue,
+                total: kpiTmp.total,
+                pending: dashFilterStatus === 'ALL' ? kpiTmp.progressAll : kpiTmp.total
+            };
 
             let filterTextName = dashFilterStatus === 'ALL' ? 'DEAL' : dashFilterStatus;
             
@@ -2537,6 +2602,7 @@
         let salesIndexSrc = null;
         let salesIndexLen = -1;
         let salesIndexDay = '';
+        let salesMetaMap = new Map();
 
         function hasDocNo(v) {
             const s = String(v === undefined || v === null ? '' : v).trim();
@@ -2592,6 +2658,7 @@
                 };
             });
             salesIndexSrc = src; salesIndexLen = src.length; salesIndexDay = dayKey;
+            salesMetaMap = new Map(salesIndex.map(m => [m.row, m]));
             return salesIndex;
         }
 
@@ -2684,6 +2751,66 @@
                 pager.innerHTML = `<div class="small text-muted">Menampilkan ${from}–${to} dari ${total} projek</div>
                     <div class="d-flex align-items-center gap-1 flex-wrap">${btn('<i class="fas fa-chevron-left"></i>', salesPage - 1, salesPage === 1, false)}${pages.join('')}${btn('<i class="fas fa-chevron-right"></i>', salesPage + 1, salesPage === totalPages, false)}</div>`;
             }
+        }
+
+        // --- POPUP SCORE CARD (daftar projek di balik angka KPI) ---
+        let kpiData = { potential: [], revenue: [], total: [], pending: [] };
+        let kpiModalState = { key: '', items: [], shown: 0 };
+        let kpiSearchTimer = null;
+        const KPI_PAGE = 100;
+
+        function openKpiModal(key) {
+            const list = (kpiData[key] || []).slice().sort((a, b) => b.amt - a.amt);
+            const titles = {
+                potential: () => document.getElementById('kpiTitleTotalAmount').innerText,
+                revenue: () => document.getElementById('kpiTitleRev').innerText,
+                total: () => 'TOTAL PROJEK',
+                pending: () => document.getElementById('kpiTitlePending').innerText
+            };
+            kpiModalState = { key, all: list, items: list, shown: 0 };
+            document.getElementById('kpiModalTitle').innerText = titles[key]();
+            document.getElementById('kpiModalSearch').value = '';
+            renderKpiRows(true);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalKpi')).show();
+        }
+
+        function onKpiSearch() {
+            clearTimeout(kpiSearchTimer);
+            kpiSearchTimer = setTimeout(() => {
+                const q = document.getElementById('kpiModalSearch').value.toLowerCase().trim();
+                kpiModalState.items = q ? kpiModalState.all.filter(m => m.search.includes(q)) : kpiModalState.all;
+                renderKpiRows(true);
+            }, 250);
+        }
+
+        function showMoreKpi() { renderKpiRows(false); }
+
+        function renderKpiRows(reset) {
+            const st = kpiModalState;
+            if (reset) { st.shown = 0; document.querySelector('#tblKpiList tbody').innerHTML = ''; }
+            const slice = st.items.slice(st.shown, st.shown + KPI_PAGE);
+            const html = slice.map(m => {
+                const statClass = m.status === 'DEAL' ? 'bg-success' : m.status === 'NO DEAL' ? 'bg-danger' : m.status === 'NEW' ? 'bg-info text-dark' : 'bg-warning text-dark';
+                return `<tr>
+                    <td class="text-muted small">${escapeHtml(m.dateStr || '-')}</td>
+                    <td><strong>${escapeHtml(m.no)}</strong></td>
+                    <td><div class="text-truncate" style="max-width:280px;" title="${escapeHtml(m.title)}">${escapeHtml(m.title)}</div><span class="badge border text-dark mt-1">${escapeHtml(m.jenis)}</span></td>
+                    <td>${escapeHtml(m.client)}</td>
+                    <td class="text-center"><span class="badge ${statClass} px-3 py-2">${escapeHtml(m.status)}</span></td>
+                    <td class="text-end fw-bold text-primary">${formatRp(m.amt)}</td>
+                </tr>`;
+            }).join('');
+            const tbody = document.querySelector('#tblKpiList tbody');
+            tbody.insertAdjacentHTML('beforeend', html);
+            st.shown += slice.length;
+
+            const total = st.items.reduce((sum, m) => sum + m.amt, 0);
+            document.getElementById('kpiModalSub').innerText = `${st.items.length} projek · total ${formatRp(total)}`;
+            if (st.items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-folder-open fs-2 mb-2"></i><br>Tidak ada projek.</td></tr>`;
+            }
+            document.getElementById('kpiModalNote').innerText = st.items.length ? `Menampilkan ${st.shown} dari ${st.items.length} projek (diurutkan dari amount terbesar)` : '';
+            document.getElementById('kpiModalMore').classList.toggle('d-none', st.shown >= st.items.length);
         }
 
         // --- AGING PROJEK (Quotation belum PO / Invoice) ---
