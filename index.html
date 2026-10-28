@@ -525,6 +525,8 @@
         }
         :fullscreen #view-dashboard #cardAging .loc-kpi { padding: .5rem .5rem; border-bottom-width: 3px; }
         :fullscreen #view-dashboard #cardAging .loc-kpi .kpi-value { font-size: 1.3rem; }
+        :fullscreen #view-dashboard #cardAging .aging-rec-text,
+        :fullscreen #view-dashboard #cardAging .aging-reco { display: none !important; }
         :fullscreen #view-dashboard .fs-chart-row .card-custom,
         :fullscreen #view-dashboard .fs-map-card { overflow: hidden; }
         .kpi-clickable { cursor: pointer; }
@@ -849,6 +851,8 @@
                                     <span class="small text-muted fw-bold" id="agingSummary"></span>
                                 </div>
                                 <div class="row g-3" id="agingTiles"></div>
+                                <div class="d-flex rounded overflow-hidden mt-3" id="agingBar" style="height: 10px; background: #e9ecef;"></div>
+                                <div class="aging-reco small mt-3 p-3 rounded" id="agingReco" style="background: #f8f9fa; border: 1px solid #e9ecef;"></div>
                             </div>
 
                             <!-- Peta Lokasi -->
@@ -1121,6 +1125,7 @@
                 </div>
                 <div class="modal-body p-4" style="background: var(--primary-bg);">
                     <div class="card-custom mb-0">
+                        <div class="p-3 rounded mb-3 small" id="agingModalReco" style="background:#f8f9fa;"></div>
                         <div class="table-responsive">
                             <table class="table table-hover table-custom align-middle mb-0" id="tblAgingList">
                                 <thead>
@@ -2081,33 +2086,45 @@
             
             let sortedClients = Object.keys(clients).sort((a,b) => clients[b] - clients[a]).slice(0, 5);
             if(chartInstances['chartClient']) chartInstances['chartClient'].destroy();
+            const shortName = (n) => String(n).length > 26 ? String(n).slice(0, 25).trim() + '…' : String(n);
             chartInstances['chartClient'] = new Chart(document.getElementById('chartClient').getContext('2d'), {
-                type: 'doughnut',
+                type: 'bar',
                 data: { 
                     labels: sortedClients, 
                     datasets: [{ 
+                        label: 'Total Amount', 
                         data: sortedClients.map(c => clients[c]), 
                         backgroundColor: utColors, 
-                        borderWidth: 0 
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barThickness: 'flex',
+                        maxBarThickness: 34
                     }] 
                 },
                 options: { 
+                    indexAxis: 'y',
                     responsive: true, 
                     maintainAspectRatio: false, 
+                    layout: { padding: { right: 64 } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => formatShortRp(v) === '-' ? '0' : formatShortRp(v) } },
+                        y: { grid: { display: false }, ticks: { autoSkip: false, callback: function(v) { return shortName(this.getLabelForValue(v)); } } }
+                    },
                     plugins: { 
-                        legend: { position: 'bottom' },
-                        datalabels: {
-                            color: '#fff',
-                            font: { weight: 'bold', size: 10 },
-                            textStrokeColor: '#1A1A1A',
-                            textStrokeWidth: 2,
-                            formatter: (value, ctx) => {
-                                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                if (sum === 0 || value === 0) return null;
-                                let pct = (value * 100 / sum);
-                                if (pct < 4) return null; 
-                                return pct.toFixed(1) + "%";
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: items => items.length ? sortedClients[items[0].dataIndex] : '',
+                                label: ctx => formatRp(ctx.parsed.x)
                             }
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            clamp: true,
+                            color: '#1A1A1A',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value) => value > 0 ? formatShortRp(value) : null
                         }
                     } 
                 }
@@ -2815,11 +2832,20 @@
 
         // --- AGING PROJEK (Quotation belum PO / Invoice) ---
         const AGING_GROUPS = [
-            { key: 'karung',  label: 'KARUNG',  desc: 'Di bawah 30 hari', min: 0,  max: 30,       color: '#198754', icon: 'fa-bag-shopping' },
-            { key: 'net',     label: 'NET',     desc: '30 – 59 hari',     min: 30, max: 60,       color: '#0dcaf0', icon: 'fa-fish' },
-            { key: 'mancing', label: 'MANCING', desc: '60 – 89 hari',     min: 60, max: 90,       color: '#ffc107', icon: 'fa-water' },
-            { key: 'others',  label: 'OTHERS',  desc: '90 hari ke atas',  min: 90, max: Infinity, color: '#dc3545', icon: 'fa-triangle-exclamation' }
+            { key: 'karung',  label: 'KARUNG',  desc: 'Di bawah 30 hari', min: 0,  max: 30,       color: '#198754', icon: 'fa-bag-shopping', chip: 'bg-success', chipText: 'CURRENT · SEHAT',
+              rec: 'Pertahankan: kirim reminder berkala & pantau respons customer.',
+              recLong: 'Kondisi ideal. Projek masih baru (di bawah 30 hari). Pertahankan ritme: kirim reminder berkala, pastikan PIC customer sudah menerima quotation, dan catat jadwal follow-up berikutnya.' },
+            { key: 'net',     label: 'NET',     desc: '30 – 59 hari',     min: 30, max: 60,       color: '#0dcaf0', icon: 'fa-fish', chip: 'bg-info text-dark', chipText: 'PERLU FOLLOW-UP',
+              rec: 'Follow-up ke PIC minggu ini; konfirmasi status PO.',
+              recLong: 'Masih sangat bisa dikejar. Hubungi PIC customer minggu ini, konfirmasi apakah PO/SPK sedang diproses, dan tanyakan jika ada kendala (anggaran, jadwal, atau revisi quotation).' },
+            { key: 'mancing', label: 'MANCING', desc: '60 – 89 hari',     min: 60, max: 90,       color: '#ffc107', icon: 'fa-water', chip: 'bg-warning text-dark', chipText: 'PERLU ESKALASI',
+              rec: 'Eskalasi ke atasan; tawarkan revisi harga atau jadwal.',
+              recLong: 'Mulai berisiko. Libatkan atasan/manajemen untuk eskalasi ke level yang lebih tinggi di customer, tawarkan revisi harga, paket, atau jadwal pelaksanaan, dan tetapkan batas waktu keputusan (mis. 2 minggu).' },
+            { key: 'others',  label: 'OTHERS',  desc: '90 hari ke atas',  min: 90, max: Infinity, color: '#dc3545', icon: 'fa-triangle-exclamation', chip: 'bg-danger', chipText: 'KRITIS · REVIEW',
+              rec: 'Review satu per satu: perbarui quotation atau tutup NO DEAL.',
+              recLong: 'Sudah sangat lama tanpa PO/Invoice. Review satu per satu: jika customer masih berminat, terbitkan quotation baru; jika tidak ada respons, tandai sebagai NO DEAL agar pipeline dan Potential Amount tidak menggembung.' }
         ];
+        const AGING_IDEAL_PCT = 70; // kondisi ideal: minimal 70% projek menunggu masih di kelompok KARUNG
 
         function getAgingGroupItems(key) {
             const g = AGING_GROUPS.find(x => x.key === key);
@@ -2831,23 +2857,54 @@
             if (!box) return;
             const all = getSalesIndex().filter(m => m.agingDays !== null);
             const totalAll = all.length;
-            const totalAmt = all.reduce((s, m) => s + m.amt, 0);
+            const totalAmt = all.reduce((sum, m) => sum + m.amt, 0);
             const sub = document.getElementById('agingSummary');
             if (sub) sub.innerText = `${totalAll} projek menunggu PO / Invoice · ${formatRp(totalAmt)}`;
 
-            box.innerHTML = AGING_GROUPS.map(g => {
+            const stats = AGING_GROUPS.map(g => {
                 const items = all.filter(m => m.agingDays >= g.min && m.agingDays < g.max);
-                const amt = items.reduce((s, m) => s + m.amt, 0);
-                const pct = totalAll ? Math.round(items.length / totalAll * 100) : 0;
-                return `<div class="col-6 col-lg-3">
-                    <div class="loc-kpi aging-tile" style="border-bottom-color:${g.color}; cursor:pointer;" onclick="openAgingModal('${g.key}')" title="Klik untuk melihat daftar projek">
+                return { g, count: items.length, amt: items.reduce((sum, m) => sum + m.amt, 0), pct: totalAll ? items.length / totalAll * 100 : 0 };
+            });
+
+            box.innerHTML = stats.map(({ g, count, amt, pct }) => `<div class="col-6 col-lg-3">
+                    <div class="loc-kpi aging-tile h-100" style="border-bottom-color:${g.color}; cursor:pointer;" onclick="openAgingModal('${g.key}')" title="Klik untuk melihat daftar projek">
                         <div class="kpi-title"><i class="fas ${g.icon} me-1" style="color:${g.color}"></i>${g.label}</div>
-                        <div class="kpi-value">${items.length}</div>
-                        <div class="small fw-bold text-dark">${formatShortRp(amt) === '-' ? 'Rp 0' : 'Rp ' + formatShortRp(amt)}</div>
-                        <div class="small text-muted">${g.desc} · ${pct}%</div>
+                        <div class="kpi-value aging-amount" title="${formatRp(amt)}" style="font-size:1.45rem;">${formatShortRp(amt) === '-' ? 'Rp 0' : 'Rp ' + formatShortRp(amt)}</div>
+                        <div class="small fw-bold text-dark">${count} projek</div>
+                        <div class="small text-muted">${g.desc} · ${Math.round(pct)}%</div>
+                        <div class="mt-2"><span class="badge ${g.chip}" style="font-size:.62rem;">${g.chipText}</span></div>
+                        <div class="aging-rec-text small text-muted mt-2" style="font-size:.72rem; line-height:1.3;">${g.rec}</div>
                     </div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
+
+            // Bar distribusi
+            const bar = document.getElementById('agingBar');
+            if (bar) {
+                bar.innerHTML = totalAll ? stats.map(({ g, count, pct }) =>
+                    count ? `<div title="${g.label}: ${count} projek (${Math.round(pct)}%)" style="width:${pct}%; background:${g.color};"></div>` : '').join('') : '';
+            }
+
+            // Rekomendasi dinamis
+            const reco = document.getElementById('agingReco');
+            if (reco) {
+                if (!totalAll) {
+                    reco.innerHTML = '<i class="fas fa-circle-check text-success me-1"></i> Tidak ada projek yang menunggu PO / Invoice. Kondisi ideal.';
+                } else {
+                    const [k, n, m, o] = stats;
+                    const healthy = k.pct >= AGING_IDEAL_PCT;
+                    const lines = [];
+                    lines.push(healthy
+                        ? `<i class="fas fa-circle-check text-success me-1"></i> <strong>Sehat:</strong> ${Math.round(k.pct)}% projek masih di Karung (target ideal ≥ ${AGING_IDEAL_PCT}%).`
+                        : `<i class="fas fa-bullseye text-primary me-1"></i> <strong>Target ideal:</strong> minimal ${AGING_IDEAL_PCT}% projek di Karung. Saat ini baru <strong>${Math.round(k.pct)}%</strong> (${k.count} dari ${totalAll} projek).`);
+                    if (n.count + m.count > 0) {
+                        lines.push(`<i class="fas fa-phone-volume text-warning me-1"></i> <strong>Prioritas minggu ini:</strong> follow-up ${n.count + m.count} projek di Net &amp; Mancing (Rp ${formatShortRp(n.amt + m.amt)}). Masih paling mungkin ditutup.`);
+                    }
+                    if (o.count > 0) {
+                        lines.push(`<i class="fas fa-triangle-exclamation text-danger me-1"></i> <strong>Perlu dibersihkan:</strong> ${o.count} projek (${Math.round(o.pct)}%, Rp ${formatShortRp(o.amt)}) sudah lebih dari 90 hari. Review dan tutup sebagai NO DEAL atau terbitkan quotation baru agar Potential Amount lebih akurat.`);
+                    }
+                    reco.innerHTML = lines.map(l => `<div class="mb-1">${l}</div>`).join('');
+                }
+            }
             softRefresh(box);
         }
 
@@ -2857,6 +2914,10 @@
             const amt = items.reduce((s, m) => s + m.amt, 0);
             document.getElementById('agingModalTitle').innerText = `Aging ${g.label} (${g.desc})`;
             document.getElementById('agingModalSub').innerText = `${items.length} projek · total ${formatRp(amt)}`;
+
+            const recBox = document.getElementById('agingModalReco');
+            recBox.style.borderLeft = `5px solid ${g.color}`;
+            recBox.innerHTML = `<span class="badge ${g.chip} me-2">${g.chipText}</span><strong>Rekomendasi:</strong> ${g.recLong}`;
 
             const MAX = 500;
             const rows = items.slice(0, MAX).map(m => `<tr>
