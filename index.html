@@ -529,6 +529,11 @@
         :fullscreen #view-dashboard #cardAging .aging-reco { display: none !important; }
         :fullscreen #view-dashboard .fs-chart-row .card-custom,
         :fullscreen #view-dashboard .fs-map-card { overflow: hidden; }
+        /* Hover UX: kartu chart & sel matriks */
+        #view-dashboard .card-custom { transition: box-shadow .2s ease; }
+        #view-dashboard .card-custom:hover { box-shadow: 0 10px 22px rgba(0,0,0,.08); }
+        #tblMatriksDashboard tbody td:not(:first-child) { transition: background-color .15s ease; }
+        #tblMatriksDashboard tbody td:not(:first-child):hover { background-color: #fff3cd !important; cursor: default; }
         .kpi-clickable { cursor: pointer; }
         .kpi-clickable:hover { box-shadow: 0 10px 18px rgba(0,0,0,.12) !important; }
         .aging-tile { transition: box-shadow .2s ease; }
@@ -1885,6 +1890,55 @@
             return RP_FORMATTER.format(angka); 
         }
 
+        // --- UX HOVER CHART: bagian yang di-hover menonjol, bagian lain meredup ---
+        function hexToRgba(hex, a) {
+            let h = String(hex).replace('#', '');
+            if (h.length === 3) h = h.split('').map(c => c + c).join('');
+            const n = parseInt(h, 16);
+            if (isNaN(n) || h.length !== 6) return hex;
+            return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+        }
+        function setChartFocus(chart, idx) {
+            if (chart._focusIdx === idx) return;
+            chart._focusIdx = idx;
+            const ds = chart.data.datasets[0];
+            if (!ds._origColors) ds._origColors = Array.isArray(ds.backgroundColor) ? ds.backgroundColor.slice() : [ds.backgroundColor];
+            const n = ds.data.length;
+            ds.backgroundColor = Array.from({ length: n }, (_, i) => {
+                const c = ds._origColors[i % ds._origColors.length];
+                return (idx === -1 || i === idx) ? c : hexToRgba(c, 0.28);
+            });
+            chart.update('none');
+        }
+        const hoverFocusPlugin = {
+            id: 'hoverFocus',
+            defaults: { enabled: false },
+            afterEvent(chart, args, opts) {
+                if (!opts || !opts.enabled) return;
+                const t = args.event.type;
+                if (t !== 'mousemove' && t !== 'mouseout') return;
+                const act = chart.getActiveElements();
+                setChartFocus(chart, act.length ? act[0].index : -1);
+            }
+        };
+        if (window.Chart) Chart.register(hoverFocusPlugin);
+        const pieLegendHover = {
+            onHover: (e, item, legend) => {
+                const c = legend.chart;
+                c.setActiveElements([{ datasetIndex: 0, index: item.index }]);
+                setChartFocus(c, item.index);
+                c.update('none');
+                if (e.native && e.native.target) e.native.target.style.cursor = 'pointer';
+            },
+            onLeave: (e, item, legend) => {
+                const c = legend.chart;
+                c.setActiveElements([]);
+                setChartFocus(c, -1);
+                c.update('none');
+                if (e.native && e.native.target) e.native.target.style.cursor = 'default';
+            }
+        };
+
         // --- MATRIKS KONTRIBUSI (Jumlah / Nilai Rp) ---
         let matrixMode = 'count';
         let matrixCache = { count: {}, amount: {}, months: [] };
@@ -2110,6 +2164,7 @@
                         y: { grid: { display: false }, ticks: { autoSkip: false, callback: function(v) { return shortName(this.getLabelForValue(v)); } } }
                     },
                     plugins: { 
+                        hoverFocus: { enabled: true },
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
@@ -2147,6 +2202,7 @@
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: { 
+                        hoverFocus: { enabled: true },
                         legend: { display: false },
                         datalabels: {
                             color: '#fff',
@@ -2175,15 +2231,16 @@
                         borderWidth: 0,
                         spacing: 5,
                         borderRadius: 5,
-                        hoverOffset: 6
+                        hoverOffset: 14
                     }] 
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
-                    layout: { padding: 8 },
+                    layout: { padding: 16 },
                     plugins: { 
-                        legend: { position: 'bottom' },
+                        hoverFocus: { enabled: true },
+                        legend: { position: 'bottom', ...pieLegendHover },
                         datalabels: {
                             color: '#fff',
                             font: { weight: 'bold', size: 10 },
@@ -2215,16 +2272,19 @@
                         borderWidth: 0,
                         spacing: 5,
                         borderRadius: 5,
-                        hoverOffset: 6
+                        hoverOffset: 14
                     }] 
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
-                    layout: { padding: 8 },
+                    layout: { padding: 16 },
                     plugins: { 
+                        hoverFocus: { enabled: true },
                         legend: { 
                             position: 'bottom',
+                            onHover: pieLegendHover.onHover,
+                            onLeave: pieLegendHover.onLeave,
                             onClick: function(e, legendItem, legend) {
                                 openCancelListModal(legendItem.text);
                             }
