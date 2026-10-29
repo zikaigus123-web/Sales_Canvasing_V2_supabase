@@ -2172,12 +2172,16 @@
                     datasets: [{ 
                         data: Object.values(jenisCounts), 
                         backgroundColor: utColors, 
-                        borderWidth: 0 
+                        borderWidth: 0,
+                        spacing: 5,
+                        borderRadius: 5,
+                        hoverOffset: 6
                     }] 
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
+                    layout: { padding: 8 },
                     plugins: { 
                         legend: { position: 'bottom' },
                         datalabels: {
@@ -2208,12 +2212,16 @@
                     datasets: [{ 
                         data: sortedCancelData, 
                         backgroundColor: ['#ef4444', '#f97316', '#8b5cf6', '#64748b', '#cbd5e1'], 
-                        borderWidth: 0 
+                        borderWidth: 0,
+                        spacing: 5,
+                        borderRadius: 5,
+                        hoverOffset: 6
                     }] 
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
+                    layout: { padding: 8 },
                     plugins: { 
                         legend: { 
                             position: 'bottom',
