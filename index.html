@@ -950,7 +950,7 @@
                     <h3 class="mb-4 fw-bold">Laporan Ringkasan Sales (Report)</h3>
                     <div class="card-custom mb-4 bg-light border-0">
                         <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold text-dark">Filter Status Akhir</label>
                                 <select class="form-select shadow-sm" id="reportFilterStatus">
                                     <option value="ALL">Semua Status (ALL)</option>
@@ -960,7 +960,7 @@
                                     <option value="NO DEAL">Hanya NO DEAL</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold text-dark">Filter Bulan</label>
                                 <select class="form-select shadow-sm" id="reportFilterBulan">
                                     <option value="ALL">Semua Bulan (ALL)</option>
@@ -976,6 +976,12 @@
                                     <option value="OCT">OCT</option>
                                     <option value="NOV">NOV</option>
                                     <option value="DEC">DEC</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-dark">Filter Tahun</label>
+                                <select class="form-select shadow-sm" id="reportFilterTahun">
+                                    <option value="ALL">Semua Tahun (ALL)</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -1827,6 +1833,7 @@
 
             if(viewId === 'dashboard') renderDashboard();
             if(viewId === 'sales') renderSalesTable();
+            if(viewId === 'reports') populateReportYears();
             if(viewId === 'users') renderUsers();
             if(viewId === 'logs') renderLogsTable();
         }
@@ -3134,10 +3141,29 @@
         }
 
         // --- LAPORAN & EKSPOR PDF/EXCEL ---
-        function generateReport() {
+        function populateReportYears() {
+            const sel = document.getElementById('reportFilterTahun');
+            if (!sel) return;
+            const keep = sel.value || 'ALL';
+            const years = new Set();
+            getSalesIndex().forEach(m => { if (m.ts > 0) years.add(new Date(m.ts).getFullYear()); });
+            const list = Array.from(years).sort((a, b) => b - a);
+            sel.innerHTML = '<option value="ALL">Semua Tahun (ALL)</option>' + list.map(y => `<option value="${y}">${y}</option>`).join('');
+            sel.value = (keep === 'ALL' || years.has(Number(keep))) ? keep : 'ALL';
+        }
+
+        function reportFileSuffix() {
+            const th = document.getElementById('reportFilterTahun').value;
+            const bl = document.getElementById('reportFilterBulan').value;
+            return (th !== 'ALL' ? '_' + th : '') + (bl !== 'ALL' ? '_' + bl : '');
+        }
+
+        function generateReport(silent) {
             const statFilter = document.getElementById('reportFilterStatus').value; 
             const blnFilter = document.getElementById('reportFilterBulan').value; 
+            const thnFilter = document.getElementById('reportFilterTahun').value; 
             const data = getDB(DB_KEY_SALES);
+            getSalesIndex();
             
             let filtered = data.filter(s => {
                 let statusNormalize = String(s.STATUS || '').toUpperCase().trim();
@@ -3147,8 +3173,10 @@
                 
                 let matchStat = statFilter === 'ALL' || statusNormalize === statFilter;
                 let matchBln = blnFilter === 'ALL' || String(s.MONTH).toUpperCase() === blnFilter;
+                let meta = salesMetaMap.get(s);
+                let matchThn = thnFilter === 'ALL' || (meta && meta.ts > 0 && String(new Date(meta.ts).getFullYear()) === thnFilter);
                 
-                return matchStat && matchBln;
+                return matchStat && matchBln && matchThn;
             });
             
             let html = '';
@@ -3158,11 +3186,13 @@
                 if(stat === 'PENDING') {
                     stat = 'ON PROGRESS';
                 }
+                let meta = salesMetaMap.get(e);
+                let tgl = (meta && meta.dateStr) ? meta.dateStr : (e['Tgl Dibuat'] || '-');
                 
                 let badgeClass = stat === 'DEAL' ? 'bg-success' : stat === 'NO DEAL' ? 'bg-danger' : stat === 'NEW' ? 'bg-info text-dark' : 'bg-warning text-dark';
                 
                 html += `<tr>
-                    <td>${e['Tgl Dibuat']||'-'}</td>
+                    <td>${tgl}</td>
                     <td><strong>${e['No. Projek']}</strong></td>
                     <td class="fw-medium text-truncate" style="max-width:200px;" title="${e['Judul Projek']}">${e['Judul Projek']}</td>
                     <td>${e.Jenis}</td>
@@ -3175,20 +3205,23 @@
             });
             
             document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="9" class="text-center py-4">Data tidak ditemukan</td></tr>';
-            addLog('Filter Laporan', `User menarik laporan (Status: ${statFilter}, Bulan: ${blnFilter})`);
+            if (!silent) addLog('Filter Laporan', `User menarik laporan (Status: ${statFilter}, Bulan: ${blnFilter}, Tahun: ${thnFilter})`);
         }
         
         function exportReportExcel() { 
-            XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tblReport'), {sheet:"Report"}), "Laporan_Revenue_UT.xlsx"); 
+            generateReport(true); // pastikan isi tabel sesuai filter yang sedang dipilih
+            XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tblReport'), {sheet:"Report"}), "Laporan_Revenue_UT" + reportFileSuffix() + ".xlsx"); 
             addLog('Export Laporan', 'Mencetak Laporan Revenue ke Excel'); 
         }
         
         function exportReportPDF() {
+            generateReport(true);
             const doc = new window.jspdf.jsPDF('landscape'); 
             doc.setFontSize(16); 
             doc.text("Laporan Sales Canvasing UT", 14, 22); 
             doc.setFontSize(10); 
-            doc.text("Diekstrak oleh: " + (currentUser ? currentUser.username : 'System') + " | Pada: " + new Date().toLocaleDateString(), 14, 28);
+            const th = document.getElementById('reportFilterTahun').value;
+            doc.text("Diekstrak oleh: " + (currentUser ? currentUser.username : 'System') + " | Pada: " + new Date().toLocaleDateString() + " | Tahun: " + (th === 'ALL' ? 'Semua' : th), 14, 28);
             
             doc.autoTable({ 
                 html: '#tblReport', 
@@ -3196,7 +3229,7 @@
                 theme: 'grid', 
                 headStyles: { fillColor: [26, 26, 26], textColor: [255, 192, 0] } 
             }); 
-            doc.save('Laporan_Revenue_UT.pdf'); 
+            doc.save('Laporan_Revenue_UT' + reportFileSuffix() + '.pdf'); 
             addLog('Export Laporan', 'Mencetak Laporan Revenue ke PDF');
         }
 
